@@ -1,6 +1,6 @@
 LMathNotes - Hugo-based Mathematical Research Notes Repository
 
-lmathnotes is a specialized Hugo-based web application designed for organizing, displaying, and navigating mathematical research notes with a focus on LaTeX content. It provides a comprehensive system for managing academic notes with advanced features for confidentiality, history tracking, and content exploration.
+LMathNotes is a specialized Hugo-based web application designed for organizing, displaying, and navigating mathematical research notes with a focus on LaTeX content. It provides a comprehensive system for managing academic notes with advanced features for confidentiality, history tracking, and content exploration.
 
 ## Features
 
@@ -169,4 +169,4 @@ SOFTWARE.
 
 ---
 
-*lmathnotes - Organize your mathematical research journey*
+*LMathNotes - Organize your mathematical research journey*
