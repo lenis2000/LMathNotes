@@ -9,6 +9,10 @@ _Principle_: **Notes are immutable. Once you write them, they are set in stone.*
 
 <br>
 
+[Link to GitHub]
+
+<br>
+
 _NOTE: This is a demo notebook. All PDFs here are AI-generated and contain fake math._
 
 _NOTE: The hotkey to hide/unhide blur is Cmd-B or Ctrl-B._
