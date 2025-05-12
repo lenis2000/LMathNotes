@@ -1,8 +1,8 @@
 ---
-title: "MathNotes Demo Notebook"
+title: "LMathNotes Demo Notebook"
 ---
 
-### MathNotes Demo Notebook
+### LMathNotes Demo Notebook
 
 
 _Principle_: **Notes are immutable. Once you write them, they are set in stone.**
