@@ -9,7 +9,7 @@ _Principle_: **Notes are immutable. Once you write them, they are set in stone.*
 
 <br>
 
-[Link to GitHub]
+[Link to GitHub](https://github.com/lenis2000/LMathNotes)
 
 <br>
 
