@@ -1,0 +1,21 @@
+MathNotes Documentation
+# MathNotes - Hugo-based Mathematical Research Notes Repository
+
+MathNotes is a specialized Hugo-based web application designed for organizing, displaying, and navigating mathematical research notes with a focus on LaTeX content. It provides a comprehensive system for managing academic notes with advanced features for confidentiality, history tracking, and content exploration.
+
+## Features
+
+### Content Organization
+- Chronological organization of notes in dated directories
+- Specialized handling for LaTeX/TeX files with custom viewer
+- Support for both standard research notes and handwritten notebook collections
+- Full-text search across all note content, titles, and descriptions
+
+### Navigation & Display
+- **Homepage View**: Chronological listing of all notes with expandable descriptions
+- **Monthly Notes View**: Notes organized by month with consistent display
+- **Handwritten Notebooks View**: Special display for handwritten notebook collections
+- **History View**: Chain visualization connecting related notes via prev.txt references
+- **TeX Viewer**: Specialized viewer for LaTeX files with syntax highlighting
+
+See the attached LaTeX document for complete system documentation, including file conventions, directory structure, URL patterns, setup instructions, and configuration details.

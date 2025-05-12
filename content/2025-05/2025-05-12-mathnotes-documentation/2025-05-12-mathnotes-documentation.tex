@@ -1,0 +1,199 @@
+\documentclass{article}
+\usepackage{hyperref}
+\usepackage[margin=1in]{geometry}
+
+\title{MathNotes - Hugo-based Mathematical Research Notes Repository}
+\author{}
+\date{May 12, 2025}
+
+\begin{document}
+
+\maketitle
+
+MathNotes is a specialized Hugo-based web application designed for organizing, displaying, and navigating mathematical research notes with a focus on LaTeX content. It provides a comprehensive system for managing academic notes with advanced features for confidentiality, history tracking, and content exploration.
+
+\section{Features}
+
+\subsection{Content Organization}
+\begin{itemize}
+  \item Chronological organization of notes in dated directories
+  \item Specialized handling for LaTeX/TeX files with custom viewer
+  \item Support for both standard research notes and handwritten notebook collections
+  \item Full-text search across all note content, titles, and descriptions
+\end{itemize}
+
+\subsection{Navigation \& Display}
+\begin{itemize}
+  \item \textbf{Homepage View}: Chronological listing of all notes with expandable descriptions
+  \item \textbf{Monthly Notes View}: Notes organized by month with consistent display
+  \item \textbf{Handwritten Notebooks View}: Special display for handwritten notebook collections
+  \item \textbf{History View}: Chain visualization connecting related notes via prev.txt references
+  \item \textbf{TeX Viewer}: Specialized viewer for LaTeX files with syntax highlighting
+\end{itemize}
+
+\subsection{Specialized Features}
+
+\subsubsection{TeX File Handling}
+\begin{itemize}
+  \item Custom TeX viewer with syntax highlighting via Prism.js
+  \item Line numbers for easy reference
+  \item Soft wrap toggle for improved readability
+  \item Automatic preamble separation with collapsible display
+  \item One-click download option
+  \item File metadata display (size, path)
+\end{itemize}
+
+\subsubsection{Search Capabilities}
+\begin{itemize}
+  \item Real-time searching across all content
+  \item Case-smart search (uppercase for exact matches, lowercase for case-insensitive)
+  \item Visual feedback with dynamic filtering of results
+  \item Keyboard shortcut support (Escape to clear/focus)
+  \item ``No results'' messaging with clear user feedback
+\end{itemize}
+
+\subsubsection{History Tracking}
+\begin{itemize}
+  \item Visualization of note evolution through connected history chains
+  \item Bidirectional navigation between related notes
+  \item Recursive history display with circular reference detection
+  \item Client-side JavaScript for dynamic history exploration
+\end{itemize}
+
+\subsubsection{Confidential Content Protection}
+\begin{itemize}
+  \item Confidential notes marked via \texttt{conf.txt} files
+  \item Content protection with CSS blur effect
+  \item Universal keyboard shortcut (Cmd+B / Ctrl+B) to toggle blur state
+  \item Consistent protection across all views (main, monthly, handwritten, history)
+  \item Selection prevention for blurred content
+\end{itemize}
+
+\subsection{Technical Details}
+\begin{itemize}
+  \item Built on Hugo static site generator
+  \item Custom templates for specialized content types
+  \item Local storage for preserving UI state (open/closed sections)
+  \item Responsive design for all screen sizes
+  \item Custom CSS for distinct styling of different content types
+\end{itemize}
+
+\section{File Types \& Conventions}
+
+The system uses several special files to manage content and relationships:
+
+\begin{tabular}{|l|l|}
+\hline
+\textbf{File} & \textbf{Purpose} \\
+\hline
+\texttt{description.txt} & Defines note title (first line) and description (remaining text) \\
+\texttt{prev.txt} & Lists note IDs that precede the current note in history \\
+\texttt{conf.txt} & Marks a note as confidential (triggering blur effect) \\
+\texttt{*.tex} & LaTeX source files (rendered in custom viewer) \\
+\texttt{*.pdf} & Compiled PDF documents (available for direct viewing/download) \\
+\hline
+\end{tabular}
+
+Note ID refers to the directory name of a note (e.g., \texttt{2025-05-11-blur-test-1}). These IDs are used in \texttt{prev.txt} files to establish relationships between notes and in URL parameters for the history view.
+
+\section{Directory Structure}
+
+\begin{verbatim}
+- content/
+  - YYYY-MM/
+    - YYYY-MM-DD-Note-Title/
+      - YYYY-MM-DD-Note-Title.tex  (Main TeX file)
+      - YYYY-MM-DD-Note-Title.pdf  (Compiled PDF)
+      - description.txt            (Title and description)
+      - prev.txt                   (Historical connections)
+      - conf.txt                   (Optional, for confidential notes)
+      - additional files...        (Images, bibliographies, etc.)
+  - Handwritten_Notebooks/
+    - YYYY-MM-NN_Notebook_description/
+      - description.txt
+      - PDF files...
+- layouts/
+  - Custom templates for different views
+- static/
+  - css/
+  - js/
+  - icons/
+\end{verbatim}
+
+\section{URL Structure}
+
+\begin{tabular}{|l|l|}
+\hline
+\textbf{URL Pattern} & \textbf{Purpose} \\
+\hline
+\texttt{/} & Homepage with chronological listing of all notes \\
+\texttt{/YYYY-MM/} & Monthly note listing \\
+\texttt{/Handwritten\_Notebooks/} & Handwritten notebooks listing \\
+\texttt{/history?note=YYYY-MM-DD-Note-Title} & History view for specific note \\
+\texttt{/tex-viewer?path=content/path/to/file.tex} & TeX file viewer \\
+\hline
+\end{tabular}
+
+\section{Setup Instructions}
+
+\begin{enumerate}
+  \item Install Hugo (extended version recommended)
+  \item Clone this repository
+  \item Run \texttt{hugo server} to start the development server
+  \item Access the site at \texttt{http://localhost:1313/}
+\end{enumerate}
+
+For production deployment:
+\begin{enumerate}
+  \item Run \texttt{hugo} to build the static site
+  \item Deploy the \texttt{public} directory to your web server
+\end{enumerate}
+
+\section{Configuration}
+
+Configuration is managed through \texttt{hugo.toml}:
+
+\begin{itemize}
+  \item Custom media types for TeX files
+  \item Server headers for correct content type handling
+  \item Module mounts for serving content directory as static files
+  \item Theme configuration for Paperesque base theme
+\end{itemize}
+
+\section{Usage Guidelines}
+
+\subsection{Adding New Notes}
+\begin{enumerate}
+  \item Create a new directory with the naming pattern \texttt{YYYY-MM-DD-Note-Title}
+  \item Add your main TeX file with matching name
+  \item Create a \texttt{description.txt} with title and description
+  \item (Optional) Add \texttt{prev.txt} to link to previous related notes
+  \item (Optional) Add \texttt{conf.txt} if the note contains confidential information
+\end{enumerate}
+
+\subsection{Navigation}
+\begin{itemize}
+  \item Use the main page for chronological browsing
+  \item Use search for finding specific content
+  \item Use history view to track research evolution
+\end{itemize}
+
+\subsection{Working with Confidential Content}
+\begin{itemize}
+  \item Add an empty \texttt{conf.txt} file to any note directory to mark as confidential
+  \item Use Cmd+B (Mac) or Ctrl+B (Windows/Linux) to toggle blur effect
+  \item Content remains protected until explicitly revealed by the user
+\end{itemize}
+
+\section{License}
+
+This project is provided ``as-is'' without warranty of any kind, express or implied. You are free to use, modify, and distribute it as you see fit.
+
+\vspace{1cm}
+\hrulefill
+
+\begin{center}
+\textit{MathNotes - Organize your mathematical research journey}
+\end{center}
+
+\end{document}
