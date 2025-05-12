@@ -102,16 +102,46 @@ Note ID refers to the directory name of a note (e.g., `2025-05-11-blur-test-1`).
 | `/history?note=YYYY-MM-DD-Note-Title` | History view for specific note |
 | `/tex-viewer?path=content/path/to/file.tex` | TeX file viewer |
 
-## Setup Instructions
+## Installation and Setup Instructions
 
-1. Install Hugo (extended version recommended)
-2. Clone this repository
-3. Run `hugo server` to start the development server
-4. Access the site at `http://localhost:1313/`
+### Prerequisites
+1. Install Hugo (extended version required):
+   - **macOS**: `brew install hugo`
+   - **Windows**: `choco install hugo-extended` or download from [Hugo Releases](https://github.com/gohugoio/hugo/releases)
+   - **Linux**: `sudo apt install hugo` or `sudo snap install hugo`
 
-For production deployment:
-1. Run `hugo` to build the static site
-2. Deploy the `public` directory to your web server
+### Local Development
+1. Clone this repository:
+   ```bash
+   git clone https://github.com/yourusername/notes-public.git
+   cd notes-public
+   ```
+
+2. Run the development server:
+   ```bash
+   hugo server -D
+   ```
+
+3. Access the site in your browser at `http://localhost:1313/`
+
+### Working with LaTeX Files
+1. LaTeX files are stored in content directories with the naming pattern `YYYY-MM-DD-Note-Title/`
+2. To compile LaTeX files, use the `lmk` command:
+   ```bash
+   lmk filename.tex
+   ```
+   This will generate the corresponding PDF in the same directory.
+
+### Production Deployment
+1. Build the static site:
+   ```bash
+   hugo
+   ```
+
+2. Deploy the `public` directory to your web server:
+   ```bash
+   rsync -avz --delete public/ user@your-server:/path/to/public_html/
+   ```
 
 ## Configuration
 
