@@ -5,4 +5,4 @@ month: "05"
 year: "2025"
 ---
 
-To be completed once the month is over.
+Some reflections and reviews on the month of May 2025.
