@@ -137,19 +137,68 @@ Note ID refers to the directory name of a note (e.g., \texttt{2025-05-11-blur-te
 \hline
 \end{tabular}
 
-\section{Setup Instructions}
+\section{Installation and Setup Instructions}
 
+\subsection{Prerequisites}
+\begin{itemize}
+  \item Install Hugo (extended version required):
+  \begin{itemize}
+    \item \textbf{macOS}: \texttt{brew install hugo}
+    \item \textbf{Windows}: \texttt{choco install hugo-extended} or download from \href{https://github.com/gohugoio/hugo/releases}{Hugo Releases}
+    \item \textbf{Linux}: \texttt{sudo apt install hugo} or \texttt{sudo snap install hugo}
+  \end{itemize}
+\end{itemize}
+
+\subsection{Local Development}
 \begin{enumerate}
-  \item Install Hugo (extended version recommended)
-  \item Clone this repository
-  \item Run \texttt{hugo server} to start the development server
-  \item Access the site at \texttt{http://localhost:1313/}
+  \item Clone the repository:
+  \begin{verbatim}
+    git clone https://github.com/yourusername/notes-public.git
+    cd notes-public
+  \end{verbatim}
+
+  \item Run the development server:
+  \begin{verbatim}
+    hugo server -D
+  \end{verbatim}
+
+  \item Access the site in your browser at \texttt{http://localhost:1313/}
 \end{enumerate}
 
-For production deployment:
+\subsection{Working with LaTeX Files}
 \begin{enumerate}
-  \item Run \texttt{hugo} to build the static site
-  \item Deploy the \texttt{public} directory to your web server
+  \item LaTeX files are stored in content directories with the naming pattern \texttt{YYYY-MM-DD-Note-Title/}
+
+  \item To compile LaTeX files, use the \texttt{lmk} command:
+  \begin{verbatim}
+    lmk filename.tex
+  \end{verbatim}
+  The \texttt{lmk} command is a LaTeX Make tool that will:
+  \begin{itemize}
+    \item Compile the LaTeX document
+    \item Handle bibliography generation
+    \item Run multiple passes to resolve references
+    \item Generate the final PDF in the same directory
+  \end{itemize}
+
+  \item For more complex documents, you can specify additional options:
+  \begin{verbatim}
+    lmk -bibtex filename.tex  # Force bibtex processing
+    lmk -clean filename.tex   # Remove temporary files after compilation
+  \end{verbatim}
+\end{enumerate}
+
+\subsection{Production Deployment}
+\begin{enumerate}
+  \item Build the static site:
+  \begin{verbatim}
+    hugo
+  \end{verbatim}
+
+  \item Deploy the \texttt{public} directory to your web server:
+  \begin{verbatim}
+    rsync -avz --delete public/ user@your-server:/path/to/public_html/
+  \end{verbatim}
 \end{enumerate}
 
 \section{Configuration}
