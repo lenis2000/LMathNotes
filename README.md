@@ -1,6 +1,6 @@
-# MathNotes - Hugo-based Mathematical Research Notes Repository
+# lmathnotes - Hugo-based Mathematical Research Notes Repository
 
-MathNotes is a specialized Hugo-based web application designed for organizing, displaying, and navigating mathematical research notes with a focus on LaTeX content. It provides a comprehensive system for managing academic notes with advanced features for confidentiality, history tracking, and content exploration.
+lmathnotes is a specialized Hugo-based web application designed for organizing, displaying, and navigating mathematical research notes with a focus on LaTeX content. It provides a comprehensive system for managing academic notes with advanced features for confidentiality, history tracking, and content exploration.
 
 ## Features
 
@@ -143,8 +143,30 @@ Configuration is managed through `hugo.toml`:
 
 ## License
 
-This project is provided "as-is" without warranty of any kind, express or implied. You are free to use, modify, and distribute it as you see fit.
+This project is licensed under the MIT License - see the LICENSE file for details.
+
+```
+Copyright (c) 2025 Leonid Petrov
+
+Permission is hereby granted, free of charge, to any person obtaining a copy
+of this software and associated documentation files (the "Software"), to deal
+in the Software without restriction, including without limitation the rights
+to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+copies of the Software, and to permit persons to whom the Software is
+furnished to do so, subject to the following conditions:
+
+The above copyright notice and this permission notice shall be included in all
+copies or substantial portions of the Software.
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+SOFTWARE.
+```
 
 ---
 
-*MathNotes - Organize your mathematical research journey*
+*lmathnotes - Organize your mathematical research journey*
