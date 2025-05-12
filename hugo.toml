@@ -1,8 +1,8 @@
 baseURL = "/"
 languageCode = "en-us"
-title = "My Notes"
+title = "LMathNotes"
 theme = "paperesque"
-publishDir = "public"
+publishDir = "LMathNotes"
 
 # Suppress raw HTML warning
 ignoreLogs = ['warning-goldmark-raw-html']
