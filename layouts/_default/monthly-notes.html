@@ -1,0 +1,326 @@
+{{ define "content" }}
+<section id="main" class="content-container article-pad-v">
+    <a href="/" class="back-button">← Home</a>
+    <h1 id="title">{{ .Title }}</h1>
+    <div class="content">{{ .Content }}</div>
+
+    {{ partial "search-panel.html" . }}
+    <div class="notes-section">
+        <!-- Get all the dates first, then sort them -->
+        {{ $dateGroups := dict }} {{ $noteDirs := slice }} {{ $monthFilter :=
+        .Params.month }} {{ $yearFilter := .Params.year }} {{ $monthYearPrefix
+        := printf "%s-%s" $yearFilter $monthFilter }}
+
+        <!-- Level 1: collect directories from direct content folder -->
+        {{ range readDir "content" }} {{ if .IsDir }} {{ $dirName := .Name }} {{
+        $dirPath := printf "content/%s" $dirName }}
+
+        <!-- Check if this is a note directory -->
+        {{ $dateMatch := findRE "^.*?(\\d{4}-\\d{2}-\\d{2})" $dirName 1 }} {{ if
+        $dateMatch }} {{ $date := index $dateMatch 0 }} {{ if hasPrefix $date
+        $monthYearPrefix }}
+        <!-- This is a note directory for the target month, add to our collection -->
+        {{ $noteDirs = $noteDirs | append $dirPath }} {{ end }} {{ else }}
+        <!-- This is a subfolder, check its contents -->
+        {{ range readDir $dirPath }} {{ if .IsDir }} {{ $subDirName := .Name }}
+        {{ $subDirPath := printf "%s/%s" $dirPath $subDirName }}
+
+        <!-- Check if this is a note directory -->
+        {{ $dateMatch := findRE "^.*?(\\d{4}-\\d{2}-\\d{2})" $subDirName 1 }} {{
+        if $dateMatch }} {{ $date := index $dateMatch 0 }} {{ if hasPrefix $date
+        $monthYearPrefix }}
+        <!-- This is a note directory for the target month, add to our collection -->
+        {{ $noteDirs = $noteDirs | append $subDirPath }} {{ end }} {{ end }} {{
+        end }} {{ end }} {{ end }} {{ end }} {{ end }}
+
+        <!-- Second pass: extract dates from all found note directories -->
+        {{ range $noteDirs }} {{ $dirPath := . }} {{ $dirName := path.Base
+        $dirPath }} {{ $dateMatch := findRE "^.*?(\\d{4}-\\d{2}-\\d{2})"
+        $dirName 1 }} {{ if $dateMatch }} {{ $date := index $dateMatch 0 }}
+        <!-- Grab the date if it exists -->
+        {{ if not (isset $dateGroups $date) }} {{ $dateGroups = merge
+        $dateGroups (dict $date slice) }} {{ end }} {{ end }} {{ end }}
+
+        <!-- Sort dates in descending order -->
+        {{ $dates := slice }} {{ range $date, $_ := $dateGroups }} {{ $dates =
+        $dates | append $date }} {{ end }}
+
+        <!-- List them in reverse order -->
+        {{ range sort $dates "value" "desc" }} {{ $date := . }} {{ $formatDate
+        := time.AsTime $date }}
+        <h2 class="date-header">
+            {{ $formatDate.Format "January 2, 2006 • Monday" }}
+        </h2>
+        <ul class="notes-list">
+            {{ range $noteDirs }} {{ $dirPath := . }} {{ $dirName := path.Base
+            $dirPath }} {{ $dateMatch := findRE "^.*?(\\d{4}-\\d{2}-\\d{2})"
+            $dirName 1 }} {{ if $dateMatch }} {{ $noteDate := index $dateMatch 0
+            }} {{ if eq $noteDate $date }} {{ $pdfPath := printf "%s/%s.pdf"
+            $dirPath (path.Base $dirPath) }} {{ $title := "" }} {{ $description
+            := "Mathematical research notes" }} {{ $descPath := printf
+            "%s/description.txt" $dirPath }} {{ if fileExists $descPath }} {{
+            $descContent := readFile $descPath }} {{ $descLines := split
+            $descContent "\n" }} {{ if gt (len $descLines) 0 }} {{ $title =
+            index $descLines 0 }} {{ if gt (len $descLines) 1 }} {{ $description
+            = delimit (after 1 $descLines) "\n" }} {{ end }} {{ else }} {{
+            $title = replaceRE "^.*?\\d{4}-\\d{2}-\\d{2}-(.+)$" "$1" $dirName }}
+            {{ $title = replace $title "-" " " }} {{ end }} {{ else }} {{ $title
+            = replaceRE "^.*?\\d{4}-\\d{2}-\\d{2}-(.+)$" "$1" $dirName }} {{
+            $title = replace $title "-" " " }} {{ end }}
+
+            {{ $confPath := printf "%s/conf.txt" $dirPath }}
+            {{ $shouldBlur := false }}
+            {{ if fileExists $confPath }}
+                {{ $shouldBlur = true }}
+            {{ end }}
+            <li class="note-item {{ if $shouldBlur }}blurred-note{{ end }}" data-blur="{{ $shouldBlur }}">
+                <div class="note-content">
+                    <details>
+                        <summary class="note-title">
+                            {{ if in $title "Handwritten Notebook" }}
+                            <i>{{ $title }}</i>
+                            {{ else }}
+                            <b>{{ $title }}</b>
+                            {{ end }}
+                        </summary>
+                        <p class="note-description">
+                            {{ $description | markdownify }}
+                        </p>
+                    </details>
+                </div>
+                <div class="link-container">
+                    <div class="all-links">
+                        <!-- Main PDF with directory name -->
+                        <a
+                            href="/{{ $pdfPath }}"
+                            target="_blank"
+                            class="pdf-link"
+                            >PDF</a
+                        >
+
+                        <!-- Find and display main TEX file link -->
+                        {{ $texFiles := slice }} {{ with $files := readDir
+                        $dirPath }} {{ range . }} {{ if findRE "\\.tex$" .Name
+                        }} {{ $texFiles = $texFiles | append . }} {{ end }} {{
+                        end }} {{ end }} {{ if gt (len $texFiles) 0 }} {{
+                        $texFile := index $texFiles 0 }}
+                        <span class="link-separator">&bull;</span>
+                        <a
+                            href="/tex-viewer?path={{ $dirPath }}/{{ $texFile.Name }}"
+                            target="_blank"
+                            class="tex-link"
+                            >TEX</a
+                        >
+                        {{ end }}
+
+                        <!-- Find and display additional PDF files -->
+                        {{ $additionalPDFs := slice }} {{ with $files := readDir
+                        $dirPath }} {{ range . }} {{ if and (findRE "\\.pdf$"
+                        .Name) (ne .Name (printf "%s.pdf" (path.Base $dirPath)))
+                        }} {{ $additionalPDFs = $additionalPDFs | append . }} {{
+                        end }} {{ end }} {{ end }} {{ range $additionalPDFs }}
+                        <span class="link-separator-small">&bull;</span>
+                        <a
+                            href="/{{ $dirPath }}/{{ .Name }}"
+                            target="_blank"
+                            class="file-link file-link-pdf"
+                            >{{ .Name }}</a
+                        >
+                        {{ end }}
+
+                        <!-- Find and display additional TEX files -->
+                        {{ $additionalTEXs := slice }} {{ with $files := readDir
+                        $dirPath }} {{ range . }} {{ if and (findRE "\\.tex$"
+                        .Name) (ne .Name (printf "%s.tex" (path.Base $dirPath)))
+                        (ne .Name "aux1.tex") }} {{ $additionalTEXs =
+                        $additionalTEXs | append . }} {{ end }} {{ end }} {{ end
+                        }} {{ range $additionalTEXs }}
+                        <span class="link-separator-small">&bull;</span>
+                        <a
+                            href="/tex-viewer?path={{ $dirPath }}/{{ .Name }}"
+                            target="_blank"
+                            class="file-link file-link-tex"
+                            >{{ .Name }}</a
+                        >
+                        {{ end }}
+
+                        <!-- Find and display additional files (md, txt, etc) -->
+                        {{ $additionalFiles := slice }} {{ with $files :=
+                        readDir $dirPath }} {{ range . }} {{ if and (not (in
+                        .Name "description")) (not (in .Name "bib.bib")) (not
+                        (in .Name ".DS_Store")) (not (in .Name "prev.txt"))
+                        (not (in .Name "conf.txt")) (not (in .Name ".synctex")) (not (findRE "\\.pdf$" .Name))
+                        (not (findRE "\\.tex$" .Name)) (not (findRE "\\.nb$"
+                        .Name)) (not (findRE
+                        "\\.(aux|bbl|blg|log|out|synctex.gz|synctex|fdb_latexmk|fls|brf|toc)$"
+                        .Name)) }} {{ $additionalFiles = $additionalFiles |
+                        append . }} {{ end }} {{ end }} {{ end }} {{ if gt (len
+                        $additionalFiles) 0 }} {{ range $additionalFiles }}
+                        <span class="link-separator-small">&bull;</span>
+                        <a
+                            href="/{{ $dirPath }}/{{ .Name }}"
+                            target="_blank"
+                            class="file-link"
+                            >{{ .Name }}</a
+                        >
+                        {{ end }} {{ end }}
+                    </div>
+                </div>
+
+                {{/* Previous Notes Logic - Start */}}
+                {{ $currentNoteDirPath := $dirPath }}
+                {{ $prevFilePath := printf "%s/prev.txt" $currentNoteDirPath }}
+                {{ $processedPreviousNotes := slice }}
+                {{ $hasPreviousNotes := false }}
+
+                {{ if fileExists $prevFilePath }}
+                    {{ $prevContent := readFile $prevFilePath | strings.TrimSpace }}
+                    {{ if ne $prevContent "" }}
+                        {{ $hasPreviousNotes = true }}
+                        {{ $prevNoteFolderNames := split $prevContent "\n" }}
+                        {{ range $prevNoteFolderName := $prevNoteFolderNames }}
+                            {{ $cleanedPrevNoteFolderName := strings.TrimSpace . }}
+                            {{ if ne $cleanedPrevNoteFolderName "" }}
+                                {{ $foundPrevNoteData := dict }}
+                                {{/* Search for this folder name in the global $noteDirs slice */}}
+                                {{ range $potentialPrevDirPath := $noteDirs }}
+                                    {{ if eq (path.Base $potentialPrevDirPath) $cleanedPrevNoteFolderName }}
+                                        {{ $prevNoteDateStr := "" }}
+                                        {{ $pDateMatch := findRE "^.*?(\\d{4}-\\d{2}-\\d{2})" (path.Base $potentialPrevDirPath) 1 }}
+                                        {{ if $pDateMatch }}{{ $prevNoteDateStr = index $pDateMatch 0 }}{{ end }}
+
+                                        {{ $prevNoteTitle := "" }}
+                                        {{ $pDescPath := printf "%s/description.txt" $potentialPrevDirPath }}
+                                        {{ $defaultPrevTitle := replaceRE "^.*?\\d{4}-\\d{2}-\\d{2}-(.+)$" "$1" (path.Base $potentialPrevDirPath) | replace "-" " " }}
+                                        {{ if fileExists $pDescPath }}
+                                            {{ $pDescContent := readFile $pDescPath | strings.TrimSpace }}
+                                            {{ $pDescLines := split $pDescContent "\n" }}
+                                            {{ $prevNoteTitle = index $pDescLines 0 | strings.TrimSpace | default $defaultPrevTitle }}
+                                        {{ else }}
+                                            {{ $prevNoteTitle = $defaultPrevTitle }}
+                                        {{ end }}
+                                        {{ $foundPrevNoteData = dict "path" $potentialPrevDirPath "title" $prevNoteTitle "date" $prevNoteDateStr "name" $cleanedPrevNoteFolderName }}
+                                    {{ end }}
+                                {{ end }}
+                                {{ if not $foundPrevNoteData }}
+                                    {{ $processedPreviousNotes = $processedPreviousNotes | append (dict "path" "" "title" (printf "Previous note '%s' not found" $cleanedPrevNoteFolderName) "date" "" "name" $cleanedPrevNoteFolderName) }}
+                                {{ else }}
+                                    {{ $processedPreviousNotes = $processedPreviousNotes | append $foundPrevNoteData }}
+                                {{ end }}
+                            {{ end }}
+                        {{ end }}
+                    {{ end }}
+                {{ end }}
+
+                {{ if $hasPreviousNotes }}
+                    <div class="previous-notes-section" style="margin-top: 0.3em; margin-left: 1.5em;">
+                        <ul style="list-style-type: none; font-size: 0.9em; padding-left: 0; margin-bottom: 0; display: inline;">
+                            {{ range $i, $prevNote := $processedPreviousNotes }}
+                                <span style="color: #999; margin-right: 0.1em;">→</span>
+                                {{ if $prevNote.path }}
+                                    {{ $pdfLink := printf "/%s/%s.pdf" $prevNote.path (path.Base $prevNote.path) }}
+                                    <a href="{{ $pdfLink | relURL }}" target="_blank">{{ $prevNote.title }}</a>
+                                    {{ if $prevNote.date }}
+                                        {{ $dateObj := time.AsTime $prevNote.date }}
+                                        <span style="color: #666;">({{ $dateObj.Format "January 2, 2006" }})</span>
+                                    {{ end }}
+                                {{ else }}
+                                    <span style="color: #888;">{{ $prevNote.title }}</span>
+                                {{ end }}
+                                {{ if eq $i (sub (len $processedPreviousNotes) 1) }}
+                                    {{ $historyLink := printf "/history?note=%s" (path.Base $currentNoteDirPath) }}
+                                    <a href="{{ $historyLink | relURL }}" class="history-link" style="font-size: 0.9em; display: inline-block; color: #007bff; margin-left: 0.5em;">&raquo;</a>
+                                {{ end }}
+                            {{ end }}
+                        </ul>
+                    </div>
+                {{ end }}
+                {{/* Previous Notes Logic - End */}}
+            </li>
+            {{ end }} {{ end }} {{ end }}
+        </ul>
+        {{ end }}
+    </div>
+</section>
+<script>
+    document.addEventListener("DOMContentLoaded", function () {
+        // Handle details/summary elements
+        const details = document.querySelectorAll("details");
+        details.forEach((detail) => {
+            detail.addEventListener("toggle", function () {
+                localStorage.setItem(
+                    "detail-" +
+                        this.querySelector("summary").textContent.trim(),
+                    this.open,
+                );
+            });
+
+            const stored = localStorage.getItem(
+                "detail-" + detail.querySelector("summary").textContent.trim(),
+            );
+            if (stored === "true") {
+                detail.open = true;
+            }
+        });
+
+        // Blur handling functionality
+        const blurredNotes = document.querySelectorAll('.blurred-note');
+        let allUnblurred = false;
+
+        // Function to toggle blur state
+        function toggleBlur() {
+            console.log('Toggle blur called, found ' + blurredNotes.length + ' blurred notes');
+
+            if (allUnblurred) {
+                blurredNotes.forEach(note => {
+                    note.classList.remove('unblurred');
+                    console.log('Removing unblurred class from note');
+                });
+                allUnblurred = false;
+                console.log('All notes are now blurred');
+            } else {
+                blurredNotes.forEach(note => {
+                    note.classList.add('unblurred');
+                    console.log('Adding unblurred class to note');
+                });
+                allUnblurred = true;
+                console.log('All notes are now unblurred');
+            }
+        }
+
+        // Add keyboard shortcut (Command+B) for toggling blur on Mac
+        document.addEventListener('keydown', function(e) {
+            console.log('Key pressed: ' + e.key + ', metaKey: ' + e.metaKey);
+
+            // Check for Command+B (metaKey is Command on Mac)
+            if (e.metaKey && (e.key === 'b' || e.key === 'B')) {
+                console.log('Command+B detected, toggling blur');
+                toggleBlur();
+                e.preventDefault(); // Prevent any default browser behavior
+            }
+
+            // Only use Cmd+B as requested
+        });
+
+        // No hint message as requested
+    });
+</script>
+
+<style>
+    .back-button {
+        display: inline-block;
+        margin-bottom: 1.5rem;
+        padding: 4px 12px;
+        border: 1px solid #bbb;
+        border-radius: 4px;
+        text-decoration: none;
+        color: #222;
+        background: #f8f8f8;
+        font-size: 1rem;
+        transition: background 0.15s;
+    }
+    .back-button:hover {
+        background: #e5e5e5;
+    }
+</style>
+{{ end }}

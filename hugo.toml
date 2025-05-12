@@ -1,0 +1,52 @@
+baseURL = "/"
+languageCode = "en-us"
+title = "My Notes"
+theme = "paperesque"
+publishDir = "public"
+
+# Suppress raw HTML warning
+ignoreLogs = ['warning-goldmark-raw-html']
+
+# Render raw HTML
+[markup]
+  [markup.goldmark]
+    [markup.goldmark.renderer]
+      unsafe = true
+
+# Serve static files from content directory
+[module]
+  [[module.mounts]]
+    source = "content"
+    target = "static/content"
+
+# Define media types
+[mediaTypes]
+  [mediaTypes."text/x-tex"]
+    suffixes = ["tex"]
+    delimiter = "."
+  [mediaTypes."text/droplist"]
+    suffixes = ["droplist"]
+
+[outputFormats.droplist]
+  mediatype = "text/droplist"
+  isPlainText = true
+
+# Configure server to serve TEX files with the right content type
+[server]
+  [[server.headers]]
+    for = "**.tex"
+    [server.headers.values]
+      Content-Type = "text/plain; charset=utf-8"
+
+[params]
+  description = "Notes are immutable. Once you write them, they are set in stone."
+  showLinks = true
+  showCopyright = true
+  copyright = "© 2025"
+  math = true
+  customCSS = ["css/custom.css"]
+
+  # Paperesque-specific parameters
+  mainSections = ["2025-05"]
+  photosSections = []
+  paginatePostsPerPage = 50

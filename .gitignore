@@ -1,0 +1,108 @@
+# LaTeX intermediate and output files
+*.aux
+*.bbl
+*.blg
+*.brf
+*.dvi
+*.fdb_latexmk
+*.fls
+*.idx
+*.ilg
+*.ind
+*.lof
+*.log
+*.lot
+*.maf
+*.mtc*
+*.nav
+*.nlo
+*.out
+*.pdf
+*.ps
+*.snm
+*.synctex.gz
+*.toc
+*.upa
+*.upb
+*.vrb
+*.xdv
+
+# Bibliography files
+*.acn
+*.acr
+*.alg
+*.glg
+*.glo
+*.gls
+*.ist
+*.bcf
+*.run.xml
+
+# LatexMk output files
+latex.out
+latex.fls
+latex.fdb_latexmk
+
+# XeLaTeX stuff
+xelatex.fls
+xelatex.fdb_latexmk
+xelatex.log
+xelatex.synctex.gz
+
+# Lualatex stuff
+lualatex.fls
+lualatex.fdb_latexmk
+
+# meta information
+*.dpth
+*.auxlock
+*.synctex.gz(busy)
+*.spl
+
+# German zref
+*.zwc
+
+# Texpad app files
+.texpadtmp
+
+# Editors
+*~
+*.swp
+*.swo
+*.bak
+*.backup
+*.tmp
+
+# Mac OS finder
+.DS_Store
+
+# Windows Thumbs.db
+Thumbs.db
+
+# Output folders
+_build/
+build/
+output/
+out/
+auto/
+
+# TikZ externalize
+*.tikz
+*.tiff
+
+# Submissions to journals
+*.xdy
+
+# Latexian temp file
+latexian-temp-*
+
+# arara intermediate logs
+*.dtx.gz
+
+
+synctex(busy)
+*.synctex(busy)
+Notebooks_since_2018
+
+**/.claude/settings.local.json
+public

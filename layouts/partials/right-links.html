@@ -1,0 +1,84 @@
+{{/* This partial is inserted in the right side area of the header. Used for
+navigation links (previously social links) */}}
+
+<style>
+    .nav-links {
+        display: flex;
+        flex-direction: column;
+        gap: 10px;
+    }
+
+    .nav-link {
+        color: var(--link-color);
+        text-decoration: none;
+        padding: 5px 0;
+        font-weight: 500;
+        border-bottom: none;
+    }
+
+    .nav-link:hover {
+        color: var(--link-hover-color);
+        border-bottom: none;
+    }
+
+    .notebook-menu {
+        position: relative;
+        margin-top: 10px;
+    }
+
+    .dropdown-toggle:after {
+        content: "▾";
+        margin-left: 5px;
+    }
+
+    .dropdown-menu {
+        display: none;
+        position: absolute;
+        background-color: #fff;
+        box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+        border-radius: 4px;
+        padding: 10px 0;
+        min-width: 200px;
+        max-height: 400px;
+        overflow-y: auto;
+        z-index: 100;
+    }
+
+    .notebook-menu:hover .dropdown-menu {
+        display: block;
+    }
+
+    .dropdown-year {
+        font-weight: bold;
+        padding: 5px 15px;
+        color: #666;
+        margin-top: 5px;
+    }
+
+    .dropdown-item {
+        display: block;
+        padding: 3px 15px 3px 25px;
+        color: var(--text-color);
+        text-decoration: none;
+        font-size: 0.9em;
+        border-bottom: none;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+    }
+
+    .dropdown-item:hover {
+        background-color: #f5f5f5;
+        color: var(--link-hover-color);
+        border-bottom: none;
+    }
+
+    @media (max-width: 768px) {
+        .dropdown-menu {
+            position: static;
+            box-shadow: none;
+            border: 1px solid #eee;
+            max-height: none;
+        }
+    }
+</style>

@@ -1,0 +1,9 @@
+The Topology of Klein Bottles
+Initial exploration of the properties of Klein bottles as non-orientable surfaces. This note examines the basic topological properties, construction methods, and visualization techniques for understanding these fascinating objects.
+
+Key topics include:
+- Basic definition and construction
+- Embedding in 4-dimensional space
+- Relationship to Möbius strips
+- Homeomorphism and homotopy properties
+- Classic jokes about topologists (they can't tell their coffee mug from their donut)

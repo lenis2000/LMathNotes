@@ -1,0 +1,9 @@
+The Comprehensive Guide to Category Theory Jokes
+An analysis of humor in category theory, exploring why category theorists are notoriously difficult to make laugh. This note catalogs various attempts at category theory humor and analyzes why they generally fall flat.
+
+Key sections include:
+- The natural isomorphism between good jokes and empty sets
+- Why functors make terrible comedians
+- The adjoint relationship between abstraction and humor
+- Yoneda's lemma: If you get the joke, you are the joke
+- The terminal object of patience: Trying to explain a category theory joke

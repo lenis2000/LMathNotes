@@ -1,0 +1,286 @@
+{{ define "content" }}
+<section id="main" class="content-container article-pad-v">
+    <a href="{{ "/" | relURL }}" class="back-button">← Home</a>
+    <h1 id="title">{{ .Title }}</h1>
+
+    <!-- Add search panel -->
+    {{ partial "search-panel.html" . }}
+
+    <!-- Container for JavaScript-managed content -->
+    <div id="history-content">
+        <p>Loading history...</p>
+    </div>
+
+    <!-- Prepare all notes data for JavaScript -->
+    {{ $allNotesData := dict }}
+
+    {{/* Standard Notes (YYYY-MM-DD-*) */}}
+    {{ range readDir "content" }}
+        {{ if .IsDir }}
+            {{ $topLevelDirName := .Name }}
+            {{ $topLevelDirPath := printf "content/%s" $topLevelDirName }}
+            {{ $isHandwrittenCollection := eq $topLevelDirName "Handwritten_Notebooks" }}
+            {{ $isSpecialDir := or (eq $topLevelDirName "history") (eq $topLevelDirName "tex-viewer") (hasPrefix $topLevelDirName ".") }}
+
+            {{ if $isHandwrittenCollection }}
+                {{/* Process handwritten notebooks specifically */}}
+                {{ range readDir $topLevelDirPath }}
+                    {{ if .IsDir }}
+                        {{ $hwNoteName := .Name }}
+                        {{ $hwNotePath := printf "%s/%s" $topLevelDirPath $hwNoteName }}
+                        {{ $allNotesData = merge $allNotesData (dict $hwNoteName (dict "path" $hwNotePath "type" "handwritten")) }}
+                    {{ end }}
+                {{ end }}
+            {{ else if not $isSpecialDir }}
+                {{/* Process this top-level directory if it's a note */}}
+                {{ $topDateMatch := findRE "^.*?(\\d{4}-\\d{2}-\\d{2})" $topLevelDirName 1 }}
+                {{ if $topDateMatch }}
+                    {{ $allNotesData = merge $allNotesData (dict $topLevelDirName (dict "path" $topLevelDirPath "type" "default")) }}
+                {{ end }}
+                
+                {{/* Process subdirectories for notes */}}
+                {{ range readDir $topLevelDirPath }}
+                    {{ if .IsDir }}
+                        {{ $subDirName := .Name }}
+                        {{ $subDirPath := printf "%s/%s" $topLevelDirPath $subDirName }}
+                        {{ $subDateMatch := findRE "^.*?(\\d{4}-\\d{2}-\\d{2})" $subDirName 1 }}
+                        {{ if $subDateMatch }}
+                            {{ $allNotesData = merge $allNotesData (dict $subDirName (dict "path" $subDirPath "type" "default")) }}
+                        {{ end }}
+                    {{ end }}
+                {{ end }}
+            {{ end }}
+        {{ end }}
+    {{ end }}
+
+    <!-- Hidden div to store the history partial output -->
+    <div id="history-data" style="display: none;">
+        {{ range $noteId, $noteInfo := $allNotesData }}
+            <div data-note-id="{{ $noteId }}">
+                <ul class="notes-list">
+                    {{ partial "history-recursive.html" (dict "noteIdentifier" $noteId "initialTypeHint" "default" "allNotesData" $allNotesData "contextPage" . "visited" (slice)) }}
+                </ul>
+            </div>
+        {{ end }}
+    </div>
+
+    <script>
+    document.addEventListener('DOMContentLoaded', function() {
+        // Get URL parameters
+        const urlParams = new URLSearchParams(window.location.search);
+        const noteParam = urlParams.get('note');
+        const typeParam = urlParams.get('type') || 'default';
+        
+        const historyContent = document.getElementById('history-content');
+        
+        if (!noteParam) {
+            historyContent.innerHTML = '<p>No note specified. Please access this page via a history link from a note.</p>';
+        } else {
+            // Find the pre-rendered history for this note
+            const historyData = document.getElementById('history-data');
+            const noteDiv = historyData.querySelector(`[data-note-id="${noteParam}"]`);
+            
+            if (noteDiv) {
+                historyContent.innerHTML = `
+                    <div class="history-header">
+                        <p>History chain for: <strong>${noteParam}</strong></p>
+                    </div>
+                    <div class="notes-section">
+                        ${noteDiv.innerHTML}
+                    </div>
+                `;
+
+                // Setup search functionality for history page
+                const searchInput = document.getElementById("searchInput");
+                if (searchInput) {
+                    // Function to perform search and filter notes
+                    function performSearch(searchTerm) {
+                        const notes = document.querySelectorAll(".history-note-item");
+                        let hasResults = false;
+
+                        notes.forEach(note => {
+                            const title = note.querySelector(".note-title")?.textContent || "";
+                            const description = note.querySelector(".note-description")?.textContent || "";
+                            const fileLinks = Array.from(note.querySelectorAll('a')).map(a => a.textContent).join(" ");
+
+                            let isVisible = true;
+                            if (searchTerm) {
+                                const pattern = createCaseSmartPattern(searchTerm);
+                                isVisible = pattern.test(title) || pattern.test(description) || pattern.test(fileLinks);
+                            }
+
+                            note.style.display = isVisible ? "" : "none";
+                            if (isVisible) hasResults = true;
+                        });
+
+                        // Show/hide no results message
+                        updateNoResultsMessage(!hasResults && searchTerm);
+                    }
+
+                    // Search as user types
+                    searchInput.addEventListener("input", function() {
+                        performSearch(this.value.trim());
+                    });
+
+                    // Enhanced Escape key behavior - clear search AND focus the input
+                    document.addEventListener("keydown", function(event) {
+                        if (event.key === "Escape") {
+                            // If the search input is not focused and has content, focus it first
+                            if (document.activeElement !== searchInput && searchInput.value.trim() !== "") {
+                                searchInput.focus();
+                                event.preventDefault(); // Prevent default Esc behavior
+                            }
+                            // If already focused or empty, clear the search
+                            else {
+                                searchInput.value = "";
+                                performSearch(""); // Clear filtering
+                                searchInput.focus(); // Keep focus on the search input
+                                event.preventDefault(); // Prevent default Esc behavior
+                            }
+                        }
+
+                        // Toggle blur on Command+B (Mac) or Ctrl+B (Windows/Linux)
+                        if ((event.key === 'b' || event.key === 'B') && (event.metaKey || event.ctrlKey)) {
+                            event.preventDefault(); // Prevent default browser behavior
+                            const blurredNotes = document.querySelectorAll('.blurred-note');
+                            blurredNotes.forEach(note => {
+                                note.classList.toggle('unblurred');
+                            });
+                        }
+                    });
+                }
+            } else {
+                historyContent.innerHTML = `
+                    <p style="color: #ffc107; border: 1px solid #ffeeba; padding: 5px; border-radius:3px;">
+                        Note '<strong>${noteParam}</strong>' was not found in the site's content. It might be misspelled or no longer exist.
+                    </p>
+                `;
+            }
+        }
+
+        function createCaseSmartPattern(searchTerm) {
+            // Escape special regex characters
+            const escaped = searchTerm.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+
+            // Build a regex pattern where uppercase letters match only uppercase,
+            // but lowercase letters match both cases
+            let pattern = '';
+            for (let i = 0; i < escaped.length; i++) {
+                const char = escaped[i];
+                // If it's uppercase, match only uppercase
+                if (char === char.toUpperCase() && char !== char.toLowerCase()) {
+                    pattern += char;
+                }
+                // If it's lowercase, match both cases
+                else if (char === char.toLowerCase() && char !== char.toUpperCase()) {
+                    pattern += '[' + char + char.toUpperCase() + ']';
+                }
+                // If it's not a letter (number, symbol, etc.), match it exactly
+                else {
+                    pattern += char;
+                }
+            }
+
+            return new RegExp(pattern, 'g');
+        }
+
+        function updateNoResultsMessage(show) {
+            let msg = document.getElementById("noResultsMessage");
+            const container = document.querySelector(".notes-section");
+
+            if (show && container) {
+                if (!msg) {
+                    msg = document.createElement("div");
+                    msg.id = "noResultsMessage";
+                    msg.className = "no-results-message";
+                    msg.textContent = "No notes found matching your search.";
+                    msg.style.margin = "2rem 0";
+                    msg.style.textAlign = "center";
+                    msg.style.fontStyle = "italic";
+                    msg.style.color = "#666";
+                    container.appendChild(msg);
+                }
+                msg.style.display = "block";
+            } else if (msg) {
+                msg.style.display = "none";
+            }
+        }
+    });
+    </script>
+
+    <script>
+        document.addEventListener("DOMContentLoaded", function () {
+            setTimeout(function() {
+                const details = document.querySelectorAll("details");
+                details.forEach((detail) => {
+                    // Get the title text content to use as unique key
+                    const summaryText = detail.querySelector("summary").textContent.trim();
+                    const storageKey = "history-detail-" + summaryText;
+                    
+                    // Set up toggle listener to save state
+                    detail.addEventListener("toggle", function () {
+                        localStorage.setItem(storageKey, this.open);
+                    });
+                    
+                    // Restore saved state
+                    const stored = localStorage.getItem(storageKey);
+                    if (stored === "true") {
+                        detail.open = true;
+                    }
+                });
+            }, 100); // Small delay to ensure content is fully rendered
+        });
+    </script>
+</section>
+
+<style>
+  /* Back button styles */
+  .back-button {
+      display: inline-block;
+      margin-bottom: 1.5rem;
+      padding: 4px 12px;
+      border: 1px solid #bbb;
+      border-radius: 4px;
+      text-decoration: none;
+      color: #222;
+      background: #f8f8f8;
+      font-size: 1rem;
+      transition: background 0.15s;
+  }
+  .back-button:hover {
+      background: #e5e5e5;
+  }
+
+  /* History page styles */
+  .history-header { margin-bottom: 1.5rem; }
+  .notes-history-list { list-style-type: none; padding-left: 0; }
+  .history-note-item { padding: 10px 0; margin-bottom: 5px; }
+  
+  /* Details/Summary styling */
+  .history-note-item details { margin-bottom: 0.5em; }
+  .history-note-item summary { display: block; cursor: pointer; padding: 0.25em 0; position: relative; outline: none; }
+  .history-note-item summary::-webkit-details-marker { display: none; }
+  .history-note-item summary::before { content: "►"; position: absolute; left: -18px; top: 4px; font-size: 0.7em; color: #999; }
+  .history-note-item details[open] summary::before { content: "▼"; }
+  .history-note-item .note-title { margin: 0; font-size: 1.2em; font-weight: normal; }
+  .history-note-item .note-description { font-size: 0.95em; color: #333; margin: 0.7em 0; padding-left: 1em; }
+  
+  /* Links styling */
+  .history-note-item .link-container { margin-top: 8px; font-size: 0.9em; }
+  .pdf-link, .tex-link { text-decoration: none; padding: 2px 6px; border-radius: 3px; border: 1px solid #ddd; background-color: #f7f7f7; margin-right: 3px;}
+  .pdf-link { color: #0056b3; }
+  .tex-link { color: #28a745; }
+  .file-link { text-decoration: none; padding: 2px 4px; border-radius: 3px; color: #555; font-size: 0.9em; }
+  .file-link-pdf { color: #0056b3; }
+  .file-link-tex { color: #28a745; }
+  .pdf-link:hover, .tex-link:hover, .file-link:hover { background-color: #e7e7e7; }
+
+  /* No results message */
+  .no-results-message {
+    margin: 2rem 0;
+    text-align: center;
+    font-style: italic;
+    color: #666;
+  }
+</style>
+{{ end }}

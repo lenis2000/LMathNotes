@@ -1,0 +1,9 @@
+The Paradoxical Values of the Riemann Zeta Function
+An exploration of counterintuitive values of the Riemann zeta function, focusing on the famous result that 1 + 2 + 3 + 4 + ... = -1/12. This note investigates how regularization methods in physics and mathematics lead to these bizarre but useful results.
+
+Topics covered:
+- Analytic continuation of the zeta function 
+- Applications in string theory and quantum field theory
+- Ramanujan summation techniques
+- The connection to the Casimir effect
+- Humorous dialogue between Euler and a modern physicist

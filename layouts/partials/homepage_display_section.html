@@ -1,0 +1,222 @@
+{{ $section := index . "section"}}
+{{ $section_title := index . "section_title"}}
+{{ $content := index . "content"}}
+
+{{- if not (and $content $section) -}}
+    {{ errorf "Partial used wrong, ensure that the arg has keys named section and content."}}
+{{- end -}}
+
+<div class="sidepull-container">
+    {{ with $content }}
+    <div class="sidepull-side">
+        {{ . }}
+    </div>
+    {{ end }}
+    <div class="sidepull-main">
+        {{ with $section_title }}
+            <h1 class="sidepull-not-when-sidebar-shown" style="margin-bottom: 1em">{{.}}</h2>
+        {{ end }}
+        
+        <!-- Notes listing -->
+        <div class="notes-section">
+            <!-- Get all the dates first, then sort them -->
+            {{ $dateGroups := dict }}
+            {{ $noteDirs := slice }}
+
+            <!-- Level 1: collect directories from direct content folder -->
+            {{ range readDir "content" }}
+                {{ if .IsDir }}
+                    {{ $dirName := .Name }}
+                    {{ if eq $dirName $section.Type }}
+                        {{ $dirPath := printf "content/%s" $dirName }}
+                        
+                        <!-- Check level 2 directories -->
+                        {{ range readDir $dirPath }}
+                            {{ if .IsDir }}
+                                {{ $subDirName := .Name }}
+                                {{ $subDirPath := printf "%s/%s" $dirPath $subDirName }}
+                                
+                                <!-- Check if this is a note directory -->
+                                {{ $dateMatch := findRE "^.*?(\\d{4}-\\d{2}-\\d{2})" $subDirName 1 }}
+                                {{ if $dateMatch }}
+                                    <!-- This is a note directory, add to our collection -->
+                                    {{ $noteDirs = $noteDirs | append $subDirPath }}
+                                {{ end }}
+                            {{ end }}
+                        {{ end }}
+                    {{ end }}
+                {{ end }}
+            {{ end }}
+
+            <!-- Second pass: extract dates from all found note directories -->
+            {{ range $noteDirs }}
+                {{ $dirPath := . }}
+                {{ $dirName := path.Base $dirPath }}
+                {{ $dateMatch := findRE "^.*?(\\d{4}-\\d{2}-\\d{2})" $dirName 1 }}
+                {{ if $dateMatch }}
+                    {{ $date := index $dateMatch 0 }}
+                    <!-- Grab the date if it exists -->
+                    {{ if not (isset $dateGroups $date) }}
+                        {{ $dateGroups = merge $dateGroups (dict $date slice) }}
+                    {{ end }}
+                {{ end }}
+            {{ end }}
+
+            <!-- Sort dates in descending order -->
+            {{ $dates := slice }}
+            {{ range $date, $_ := $dateGroups }}
+                {{ $dates = $dates | append $date }}
+            {{ end }}
+
+            <!-- List them in reverse order -->
+            {{ range sort $dates "value" "desc" }}
+                {{ $date := . }}
+                {{ $formatDate := time.AsTime $date }}
+                <h2 class="date-header">{{ $formatDate.Format "January 2, 2006 • Monday" }}</h2>
+                <ul class="notes-list">
+                    {{ range $noteDirs }}
+                        {{ $dirPath := . }}
+                        {{ $dirName := path.Base $dirPath }}
+                        {{ $dateMatch := findRE "^.*?(\\d{4}-\\d{2}-\\d{2})" $dirName 1 }}
+                        {{ if $dateMatch }}
+                            {{ $noteDate := index $dateMatch 0 }}
+                            {{ if eq $noteDate $date }}
+                                {{ $pdfPath := printf "%s/%s.pdf" $dirPath (path.Base $dirPath) }}
+                                {{ $title := "" }}
+                                {{ $description := "Mathematical research notes" }}
+                                {{ $descPath := printf "%s/description.txt" $dirPath }}
+                                {{ if fileExists $descPath }}
+                                    {{ $descContent := readFile $descPath }}
+                                    {{ $descLines := split $descContent "\n" }}
+                                    {{ if gt (len $descLines) 0 }}
+                                        {{ $title = index $descLines 0 }}
+                                        {{ if gt (len $descLines) 1 }}
+                                            {{ $description = delimit (after 1 $descLines) "\n" }}
+                                        {{ end }}
+                                    {{ else }}
+                                        {{ $title = replaceRE "^.*?\\d{4}-\\d{2}-\\d{2}-(.+)$" "$1" $dirName }}
+                                        {{ $title = replace $title "-" " " }}
+                                    {{ end }}
+                                {{ else }}
+                                    {{ $title = replaceRE "^.*?\\d{4}-\\d{2}-\\d{2}-(.+)$" "$1" $dirName }}
+                                    {{ $title = replace $title "-" " " }}
+                                {{ end }}
+
+                                <li class="note-item">
+                                    <div class="note-content">
+                                        <details>
+                                            <summary class="note-title">
+                                                {{ if in $title "Handwritten Notebook" }}
+                                                <i>{{ $title }}</i>
+                                                {{ else }}
+                                                <b>{{ $title }}</b>
+                                                {{ end }}
+                                            </summary>
+                                            <p class="note-description">
+                                                {{ $description | markdownify }}
+                                            </p>
+                                        </details>
+                                    </div>
+                                    <div class="link-container">
+                                        <div class="all-links">
+                                            <!-- Main PDF with directory name -->
+                                            <a
+                                                href="/{{ $pdfPath }}"
+                                                target="_blank"
+                                                class="pdf-link"
+                                                >PDF</a
+                                            >
+
+                                            <!-- Find and display main TEX file link -->
+                                            {{ $texFiles := slice }}
+                                            {{ with $files := readDir $dirPath }}
+                                                {{ range . }}
+                                                    {{ if findRE "\\.tex$" .Name }}
+                                                        {{ $texFiles = $texFiles | append . }}
+                                                    {{ end }}
+                                                {{ end }}
+                                            {{ end }}
+
+                                            {{ if gt (len $texFiles) 0 }}
+                                                {{ $texFile := index $texFiles 0 }}
+                                                <span class="link-separator">&bull;</span>
+                                                <a
+                                                    href="/tex-viewer?path={{ $dirPath }}/{{ $texFile.Name }}"
+                                                    target="_blank"
+                                                    class="tex-link"
+                                                    >TEX</a
+                                                >
+                                            {{ end }}
+
+                                            <!-- Find and display additional PDF files -->
+                                            {{ $additionalPDFs := slice }}
+                                            {{ with $files := readDir $dirPath }}
+                                                {{ range . }}
+                                                    {{ if and (findRE "\\.pdf$" .Name) (ne .Name (printf "%s.pdf" (path.Base $dirPath))) }}
+                                                        {{ $additionalPDFs = $additionalPDFs | append . }}
+                                                    {{ end }}
+                                                {{ end }}
+                                            {{ end }}
+
+                                            {{ range $additionalPDFs }}
+                                                <span class="link-separator-small">&bull;</span>
+                                                <a
+                                                    href="/{{ $dirPath }}/{{ .Name }}"
+                                                    target="_blank"
+                                                    class="file-link file-link-pdf"
+                                                    >{{ .Name }}</a
+                                                >
+                                            {{ end }}
+
+                                            <!-- Find and display additional TEX files -->
+                                            {{ $additionalTEXs := slice }}
+                                            {{ with $files := readDir $dirPath }}
+                                                {{ range . }}
+                                                    {{ if and (findRE "\\.tex$" .Name) (ne .Name (printf "%s.tex" (path.Base $dirPath))) (ne .Name "aux1.tex") }}
+                                                        {{ $additionalTEXs = $additionalTEXs | append . }}
+                                                    {{ end }}
+                                                {{ end }}
+                                            {{ end }}
+
+                                            {{ range $additionalTEXs }}
+                                                <span class="link-separator-small">&bull;</span>
+                                                <a
+                                                    href="/tex-viewer?path={{ $dirPath }}/{{ .Name }}"
+                                                    target="_blank"
+                                                    class="file-link file-link-tex"
+                                                    >{{ .Name }}</a
+                                                >
+                                            {{ end }}
+
+                                            <!-- Find and display additional files (md, txt, etc) -->
+                                            {{ $additionalFiles := slice }}
+                                            {{ with $files := readDir $dirPath }}
+                                                {{ range . }}
+                                                    {{ if and (not (in .Name "description")) (not (in .Name "bib.bib")) (not (in .Name ".DS_Store")) (not (in .Name "prev.txt")) (not (in .Name ".synctex")) (not (findRE "\\.pdf$" .Name)) (not (findRE "\\.tex$" .Name)) (not (findRE "\\.nb$" .Name)) (not (findRE "\\.(aux|bbl|blg|log|out|synctex.gz|fdb_latexmk|fls|brf|toc)$" .Name)) }}
+                                                        {{ $additionalFiles = $additionalFiles | append . }}
+                                                    {{ end }}
+                                                {{ end }}
+                                            {{ end }}
+
+                                            {{ if gt (len $additionalFiles) 0 }}
+                                                {{ range $additionalFiles }}
+                                                    <span class="link-separator-small">&bull;</span>
+                                                    <a
+                                                        href="/{{ $dirPath }}/{{ .Name }}"
+                                                        target="_blank"
+                                                        class="file-link"
+                                                        >{{ .Name }}</a
+                                                    >
+                                                {{ end }}
+                                            {{ end }}
+                                        </div>
+                                    </div>
+                                </li>
+                            {{ end }}
+                        {{ end }}
+                    {{ end }}
+                </ul>
+            {{ end }}
+        </div>
+    </div>
+</div>

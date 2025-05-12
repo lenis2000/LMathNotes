@@ -1,0 +1,42 @@
+{{ define "body-classes" -}}
+  {{ if .Draft }}draft{{ end }} look-sheet-bkg
+{{- end }}
+
+{{ define "content" }}
+{{- partial "single-article" . -}}
+{{ end }}
+
+{{ define "footer" }}
+
+{{- partial "single-footer-customisation" . -}}
+
+{{/* TODO: right now, this gets weird when there's a big title on the right.
+There might be better info here: https://stackoverflow.com/questions/34995740/css-when-inline-block-elements-line-break-parent-wrapper-does-not-fit-new-width
+and you can test on the android-development-developer-productivity article.
+
+Would also be cool to make this fold on mobile so there's two links on separate lines.
+*/}}
+  {{ $filteredPages := where .CurrentSection.Pages "Params.mostlyHidden" "ne" true }}
+  {{ $prev := $filteredPages.Prev . }}
+  {{ $next := $filteredPages.Next . }}
+  {{if (and (not .Parent.IsHome) (or $prev $next)) }}
+    <div class="nav-bkg-50 content-container-narrow-pad bottom-links text-0p75 drop-shadow">
+      <nav class="flex-row">
+      {{with $prev }}
+      <a href="{{.Permalink}}" class="flex-row v-center no-underline"  style="max-width:45%;">
+        <span class="text-1p5">←</span>&nbsp;<span class="re-underline">Previous: {{ .Title }}</span>
+      </a>
+      {{else}}
+        <span class="flex-row v-center"></span>
+      {{end}}
+      {{with $next }}
+        <a href="{{.Permalink}}" class="flex-row v-center no-underline" style="max-width: 45%;">
+        <span class="re-underline">Next: {{.Title}}</span>&nbsp;<span class="text-1p5">→</span>
+        </a>
+      {{else}}
+        <span class="flex-row v-center"></span>
+      {{end}}
+      </nav>
+    </div>
+  {{ end }}
+{{ end }}

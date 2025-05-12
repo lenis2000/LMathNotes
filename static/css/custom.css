@@ -1,0 +1,429 @@
+/* Paperesque theme customizations */
+:root {
+    --primary-font: "Georgia", serif;
+    --mono-font: "Courier New", monospace;
+    --background-color: #fafafa;
+    --text-color: #333;
+    --link-color: #2c5282;
+    --link-hover-color: #1a365d;
+    --border-color: #ddd;
+    --code-bg: #f6f8fa;
+    --sidebar-bg: rgba(247, 250, 252, 0.8);
+    --sidebar-width: 250px;
+}
+
+body {
+    background-color: var(--background-color);
+    background-image: radial-gradient(circle, #ccc 1px, transparent 1px);
+    background-size: 20px 20px;
+    font-family: var(--primary-font);
+    line-height: 1.6;
+}
+
+.container,
+main,
+.main-content {
+    background-color: rgba(255, 255, 255, 0.95);
+    padding: 2rem;
+    border-radius: 5px;
+    box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+    margin-top: 1rem;
+    margin-bottom: 1rem;
+    max-width: 1200px;
+}
+
+h1,
+h2,
+h3,
+h4,
+h5,
+h6 {
+    font-family: var(--primary-font);
+    color: #333;
+    margin-top: 1.5em;
+    margin-bottom: 0.5em;
+}
+
+a {
+    color: var(--link-color);
+    text-decoration: none;
+    border-bottom: 1px dotted var(--link-color);
+    transition: all 0.2s ease;
+}
+
+a:hover {
+    color: var(--link-hover-color);
+    border-bottom: 1px solid var(--link-hover-color);
+}
+
+code {
+    font-family: var(--mono-font);
+    background-color: var(--code-bg);
+    padding: 0.2em 0.4em;
+    border-radius: 3px;
+    font-size: 0.9em;
+}
+
+pre {
+    background-color: var(--code-bg);
+    padding: 1em;
+    border-radius: 5px;
+    overflow-x: auto;
+    font-size: 0.9em;
+    border: 1px solid var(--border-color);
+}
+
+.post-meta {
+    color: #666;
+    font-style: italic;
+    margin-bottom: 1.5em;
+}
+
+/* Notes List Styling */
+.notes-section {
+    margin-bottom: 2rem;
+}
+
+.notes-list {
+    list-style-type: none;
+    padding: 0;
+    margin: 0;
+}
+
+.note-item {
+    padding: 1rem 0;
+    margin-bottom: 1rem;
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    border-bottom: 1px dotted var(--border-color);
+    flex-wrap: wrap;
+    transition: background-color 0.2s ease;
+}
+
+.note-item:hover {
+    background-color: rgba(0, 0, 0, 0.01);
+}
+
+.note-content {
+    flex: 1;
+    padding-right: 15px;
+}
+
+/* Title styles now handled in summary */
+
+.date-tag {
+    background-color: #f0f4f8;
+    color: #4a5568;
+    font-size: 0.85rem;
+    padding: 2px 8px;
+    border-radius: 12px;
+    margin: 0 10px;
+}
+
+.date-header {
+    font-size: 1.3rem;
+    font-weight: 700;
+    color: #1a202c;
+    margin-top: 30px;
+    margin-bottom: 15px;
+    padding: 8px 12px;
+    border-radius: 6px;
+    background-color: rgba(226, 232, 240, 0.5);
+    letter-spacing: 0.5px;
+    text-transform: none;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+    border-left: 4px solid #4299e1;
+}
+
+.link-container {
+    display: flex;
+    align-items: center;
+    justify-content: flex-end;
+    align-self: flex-start;
+    min-width: 100px;
+}
+
+.all-links {
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+    justify-content: flex-end;
+    gap: 4px;
+}
+
+.link-separator {
+    color: #718096;
+    font-size: 1.2rem;
+    margin: 0 2px;
+    line-height: 1;
+}
+
+.link-separator-small {
+    color: #718096;
+    font-size: 0.8rem;
+    margin: 0 1px;
+    line-height: 1;
+}
+
+/* PDF and TEX link styling moved to theme's style.css */
+
+details {
+    width: 100%;
+}
+
+summary {
+    cursor: pointer;
+    display: block;
+    list-style: none;
+    font-size: 1.1rem;
+    color: #2c5282;
+    margin-bottom: 0.5rem;
+}
+
+summary::-webkit-details-marker {
+    display: none;
+}
+
+summary:hover {
+    color: #1a365d;
+    text-decoration: underline;
+}
+
+.note-description {
+    font-size: 0.95rem;
+    color: #4a5568;
+    margin: 0;
+    padding: 10px 0;
+    line-height: 1.5;
+    display: block;
+    white-space: pre-wrap;
+    border-top: 1px dotted #e2e8f0;
+    margin-top: 5px;
+}
+
+/* Legacy styles maintained for compatibility */
+.note-card {
+    border: 1px solid #ddd;
+    border-radius: 5px;
+    padding: 20px;
+    margin-bottom: 20px;
+    transition: transform 0.2s;
+}
+
+.note-card:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
+}
+
+.note-summary {
+    color: #444;
+    font-size: 0.95em;
+    margin-top: 10px;
+}
+
+.paper-clip {
+    position: absolute;
+    top: -10px;
+    right: 30px;
+    width: 30px;
+    height: 50px;
+    border-radius: 5px 5px 0 0;
+    border: 2px solid #999;
+    border-bottom: none;
+    transform: rotate(45deg);
+    z-index: 1;
+}
+
+/* Sidebar Layout Styles */
+.sidepull-container {
+    display: flex;
+    flex-direction: row;
+    gap: 2rem;
+    position: relative;
+}
+
+.sidepull-side {
+    flex: 0 0 var(--sidebar-width);
+    background-color: var(--sidebar-bg);
+    padding: 1.5rem;
+    border-radius: 8px;
+    border: 1px solid var(--border-color);
+    position: sticky;
+    top: 100px;
+    max-height: calc(100vh - 150px);
+    overflow-y: auto;
+    align-self: flex-start;
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.05);
+}
+
+.sidepull-main {
+    flex: 1;
+    min-width: 0;
+}
+
+.sidepull-side h3 {
+    font-size: 1.2rem;
+    margin-top: 1.5rem;
+    margin-bottom: 0.75rem;
+    padding-bottom: 0.5rem;
+    border-bottom: 1px solid var(--border-color);
+}
+
+.sidepull-side a {
+    display: block;
+    padding: 0.35rem 0;
+    color: var(--link-color);
+    text-decoration: none;
+    border-bottom: none;
+    transition: all 0.2s ease;
+}
+
+.sidepull-side a:hover {
+    color: var(--link-hover-color);
+    text-decoration: underline;
+    transform: translateX(3px);
+}
+
+.sidepull-side .list-unstyled {
+    list-style: none;
+    padding-left: 0;
+}
+
+.sidepull-not-when-sidebar-shown {
+    display: none;
+}
+
+/* Responsive adjustments */
+@media (max-width: 768px) {
+    .sidepull-container {
+        flex-direction: column;
+    }
+
+    .sidepull-side {
+        flex: 0 0 auto;
+        position: relative;
+        top: 0;
+        width: 100%;
+        max-height: none;
+        margin-bottom: 2rem;
+    }
+
+    .sidepull-not-when-sidebar-shown {
+        display: block;
+    }
+}
+
+/* Make sure content container doesn't restrict width */
+@media (min-width: 720px) {
+    .content-container .search-panel,
+    .sidepull-main .search-panel,
+    .content-container article .search-panel,
+    .content-container section .search-panel,
+    .sidepull-container .search-panel,
+    .notes-section .search-panel,
+    .notebooks-section .search-panel,
+    section .search-panel,
+    .content .search-panel,
+    #main .search-panel {
+        width: 100% !important;
+        max-width: none !important;
+        left: 0 !important;
+        right: 0 !important;
+        margin-left: 0 !important;
+        margin-right: 0 !important;
+    }
+
+    /* Force the search panel's parent to allow 100% width */
+    .content-container,
+    .sidepull-main,
+    .notes-section,
+    .notebooks-section,
+    section#main {
+        min-width: 100%;
+        width: 100%;
+        box-sizing: border-box;
+    }
+}
+
+/* Blur styling for notes */
+.blurred-note .note-description,
+.blurred-note .pdf-link,
+.blurred-note .tex-link,
+.blurred-note .file-link,
+.blurred-note a {
+    filter: blur(5px);
+    user-select: none;
+    transition: filter 0.3s ease;
+}
+
+.blurred-note.unblurred .note-description,
+.blurred-note.unblurred .pdf-link,
+.blurred-note.unblurred .tex-link,
+.blurred-note.unblurred .file-link,
+.blurred-note.unblurred a {
+    filter: blur(0);
+    user-select: auto;
+}
+
+/* Search Panel */
+.search-panel {
+    position: relative;
+    margin: 1.5rem 0;
+    width: 100%;
+    max-width: 100%;
+    box-sizing: border-box;
+    display: block;
+    /* Override any parent width restrictions */
+    width: calc(100% - 0px) !important;
+    left: 0;
+    right: 0;
+    margin-left: 0;
+    margin-right: 0;
+    padding-left: 0;
+    padding-right: 0;
+}
+
+.search-input {
+    width: 100%;
+    max-width: 100%;
+    padding: 10px 35px 10px 15px;
+    border: 1px solid var(--border-color);
+    border-radius: 5px;
+    font-size: 1rem;
+    font-family: var(--primary-font);
+    box-sizing: border-box;
+    display: block;
+    /* Override any parent width restrictions */
+    width: 100% !important;
+    min-width: 100% !important;
+}
+
+.search-input:focus {
+    outline: none;
+    border-color: var(--link-color);
+}
+
+.clear-search {
+    position: absolute;
+    right: 10px;
+    top: 50%;
+    transform: translateY(-50%);
+    background: none;
+    border: none;
+    font-size: 1.2rem;
+    color: #999;
+    cursor: pointer;
+    padding: 5px;
+}
+
+.clear-search:hover {
+    color: #333;
+}
+
+.no-results-message {
+    text-align: center;
+    padding: 2rem;
+    color: #666;
+    font-style: italic;
+}

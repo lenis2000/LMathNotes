@@ -1,0 +1,199 @@
+{{/* Called with: dict "noteIdentifier" "..." "allNotesData" $map "contextPage" . "visited" $slice */}}
+{{ $noteIdentifier := .noteIdentifier }}
+{{ $allNotesData := .allNotesData }}
+{{ $contextPage := .contextPage }}
+{{ $visited := .visited }}
+{{ $allVisited := .visited }}
+
+{{ if in $visited $noteIdentifier }}
+    <p style="color: #dc3545; font-style: italic; margin-left: 10px;">&hookrightarrow; Circular reference to '{{ $noteIdentifier }}' already displayed in this history chain.</p>
+    {{ return }}
+{{ end }}
+{{ $visited = $visited | append $noteIdentifier }}
+
+{{ $currentNoteInfo := index $allNotesData $noteIdentifier }}
+
+{{ if not $currentNoteInfo }}
+    <p style="color: #ffc107; border: 1px solid #ffeeba; padding: 5px; border-radius:3px;">
+        Note '<strong>{{ $noteIdentifier }}</strong>' (referenced in a prev.txt) was not found in the site's content. It might be misspelled or no longer exist.
+    </p>
+    {{ return }}
+{{ end }}
+
+{{ $currentNoteDirPath := $currentNoteInfo.path }}
+{{ $currentNoteType := $currentNoteInfo.type }}
+{{ $isHandwritten := eq $currentNoteType "handwritten" }}
+
+{{ $title := "" }}
+{{ $description := "" }}
+{{ $defaultDescription := "" }}
+{{ $shouldBlur := false }}
+
+<!-- Check for conf.txt file (indicates confidential content) -->
+{{ $confPath := printf "%s/conf.txt" $currentNoteDirPath }}
+{{ if fileExists $confPath }}
+    {{ $shouldBlur = true }}
+{{ end }}
+
+{{ if $isHandwritten }}
+    {{ $title = replaceRE "^\\d{4}-\\d{2}-(.+)$" "$1" $noteIdentifier | replace "-" " " }}
+    {{ $defaultDescription = "Handwritten mathematical research notes." }}
+{{ else }}
+    {{ $title = replaceRE "^.*?\\d{4}-\\d{2}-\\d{2}-(.+)$" "$1" $noteIdentifier | replace "-" " " }}
+    {{ $defaultDescription = "Mathematical research notes." }}
+{{ end }}
+{{ $description = $defaultDescription }}
+
+{{ $descPath := printf "%s/description.txt" $currentNoteDirPath }}
+{{ if fileExists $descPath }}
+    {{ $descContent := readFile $descPath | strings.TrimSpace }}
+    {{ if $descContent }}
+        {{ $descLines := split $descContent "\n" }}
+        {{ $title = index $descLines 0 | strings.TrimSpace | default $title }}
+        {{ if gt (len $descLines) 1 }}
+            {{ $description = delimit (after 1 $descLines) "\n" | strings.TrimSpace }}
+        {{ end }}
+    {{ end }}
+{{ end }}
+
+<li class="history-note-item{{ if $shouldBlur }} blurred-note{{ end }}" {{ if $shouldBlur }}data-blur="true"{{ end }}>
+    <div class="note-content">
+        <details>
+            <summary class="note-title">
+                {{ if $isHandwritten }}<i>{{ $title }}</i>{{ else }}<b>{{ $title }}</b>{{ end }}
+                {{ $dateDisplay := "" }}
+                {{ $dateMatch := findRE "^.*?(\\d{4}-\\d{2}-\\d{2})" (path.Base $currentNoteDirPath) 1 }}
+                {{ if $dateMatch }}
+                    {{ $dateDisplay = index $dateMatch 0 }}
+                    {{ $dateObj := time.AsTime $dateDisplay }}
+                    <span style="font-size: 0.8em; color: #777; font-weight:normal;">({{ $dateObj.Format "January 2, 2006" }})</span>
+                {{ else }}
+                    {{ $dateMatchMonth := findRE "^(\\d{4}-\\d{2})" (path.Base $currentNoteDirPath) 1 }}
+                    {{ if $dateMatchMonth }}
+                        {{ $dateDisplay = index $dateMatchMonth 0 }}
+                        <span style="font-size: 0.8em; color: #777; font-weight:normal;">({{ $dateDisplay }})</span>
+                    {{ end }}
+                {{ end }}
+            </summary>
+            {{ if $description }}<p class="note-description">{{ $description }}</p>{{ end }}
+    </div>
+    <div class="link-container">
+        <div class="all-links">
+        {{ $hasLinks := false }}
+        {{ if $isHandwritten }}
+            {{ range $file := readDir $currentNoteDirPath }}
+                {{ if findRE "\\.pdf$" $file.Name }}
+                    {{ if $hasLinks }}<span class="link-separator-small">&bull;</span>{{ end }}
+                    <a href="{{ (printf "/%s/%s" $currentNoteDirPath $file.Name) | relURL }}" target="_blank" class="pdf-link">PDF ({{ $file.Name }})</a>
+                    {{ $hasLinks = true }}
+                {{ end }}
+            {{ end }}
+        {{ else }}
+            {{ $mainPdfName := printf "%s.pdf" (path.Base $currentNoteDirPath) }}
+            {{ $mainPdfPath := printf "%s/%s" $currentNoteDirPath $mainPdfName }}
+            {{ if fileExists $mainPdfPath }}
+                <a href="{{ (printf "/%s" $mainPdfPath) | relURL }}" target="_blank" class="pdf-link">PDF</a>
+                {{ $hasLinks = true }}
+            {{ end }}
+
+            {{ $mainTexBase := path.Base $currentNoteDirPath }}
+            {{ $texFiles := readDir $currentNoteDirPath }}
+            {{ range $texFiles }}
+                {{ if eq .Name (printf "%s.tex" $mainTexBase) }}
+                    {{ if $hasLinks }}<span class="link-separator">&bull;</span>{{ end }}
+                    <a href="{{ (printf "/tex-viewer?path=%s/%s" $currentNoteDirPath .Name) | relURL }}" target="_blank" class="tex-link">TEX</a>
+                    {{ $hasLinks = true }}
+                {{ end }}
+            {{ end }}
+        {{ end }}
+        {{ if not $hasLinks }}<span style="font-size:0.9em; color: #888;">No direct file links.</span>{{ end }}
+
+        <!-- Additional files -->
+        {{ $additionalPDFs := slice }}
+        {{ with $files := readDir $currentNoteDirPath }}
+            {{ range . }}
+                {{ if and (findRE "\\.pdf$" .Name) (ne .Name (printf "%s.pdf" (path.Base $currentNoteDirPath))) }}
+                    {{ $additionalPDFs = $additionalPDFs | append . }}
+                {{ end }}
+            {{ end }}
+        {{ end }}
+        {{ range $additionalPDFs }}
+            {{ if $hasLinks }}<span class="link-separator-small">&bull;</span>{{ end }}
+            <a href="{{ (printf "/%s/%s" $currentNoteDirPath .Name) | relURL }}" target="_blank" class="file-link file-link-pdf">{{ .Name }}</a>
+            {{ $hasLinks = true }}
+        {{ end }}
+
+        {{ $additionalTEXs := slice }}
+        {{ with $files := readDir $currentNoteDirPath }}
+            {{ range . }}
+                {{ if and (findRE "\\.tex$" .Name) (ne .Name (printf "%s.tex" (path.Base $currentNoteDirPath))) (ne .Name "aux1.tex") }}
+                    {{ $additionalTEXs = $additionalTEXs | append . }}
+                {{ end }}
+            {{ end }}
+        {{ end }}
+        {{ range $additionalTEXs }}
+            {{ if $hasLinks }}<span class="link-separator-small">&bull;</span>{{ end }}
+            <a href="{{ (printf "/tex-viewer?path=%s/%s" $currentNoteDirPath .Name) | relURL }}" target="_blank" class="file-link file-link-tex">{{ .Name }}</a>
+            {{ $hasLinks = true }}
+        {{ end }}
+
+        {{ $additionalFiles := slice }}
+        {{ with $files := readDir $currentNoteDirPath }}
+            {{ range . }}
+                {{ if and (not (in .Name "description")) (not (in .Name "bib.bib")) (not (in .Name ".DS_Store")) (not (in .Name "prev.txt")) (not (in .Name "conf.txt")) (not (in .Name ".synctex")) (not (findRE "\\.pdf$" .Name)) (not (findRE "\\.tex$" .Name)) (not (findRE "\\.nb$" .Name)) (not (findRE "\\.(aux|bbl|blg|log|out|synctex.gz|fdb_latexmk|fls|brf|toc)$" .Name)) }}
+                    {{ $additionalFiles = $additionalFiles | append . }}
+                {{ end }}
+            {{ end }}
+        {{ end }}
+        {{ if gt (len $additionalFiles) 0 }}
+            {{ range $additionalFiles }}
+                {{ if $hasLinks }}<span class="link-separator-small">&bull;</span>{{ end }}
+                <a href="{{ (printf "/%s/%s" $currentNoteDirPath .Name) | relURL }}" target="_blank" class="file-link">{{ .Name }}</a>
+                {{ $hasLinks = true }}
+            {{ end }}
+        {{ end }}
+        </div>
+    </div>
+
+    {{ $prevFilePath := printf "%s/prev.txt" $currentNoteDirPath }}
+    {{ if fileExists $prevFilePath }}
+        {{ $prevContent := readFile $prevFilePath | strings.TrimSpace }}
+        {{ if ne $prevContent "" }}
+            {{ $prevIDs := slice }}
+            {{ $prevNoteIdentifiers := split $prevContent "\n" }}
+            {{ range $prevNoteIdentifierRaw := $prevNoteIdentifiers }}
+                {{ $prevID := strings.TrimSpace $prevNoteIdentifierRaw }}
+                {{ if ne $prevID "" }}
+                    {{ $prevIDs = $prevIDs | append $prevID }}
+                {{ end }}
+            {{ end }}
+            {{ if gt (len $prevIDs) 0 }}
+                <div class="prev-notes">
+                    {{ range $i, $prevID := $prevIDs }}
+                        {{ $prevNoteInfo := index $allNotesData $prevID }}
+                        {{ if $prevNoteInfo }}
+                            {{ $allVisited = $allVisited | append $prevID }}
+                        {{ end }}
+                    {{ end }}
+                </div>
+            {{ end }}
+        {{ end }}
+    {{ end }}
+    </details>
+</li>
+
+<!-- Process remaining history chain in a flat manner -->
+{{ if fileExists $prevFilePath }}
+    {{ $prevContent := readFile $prevFilePath | strings.TrimSpace }}
+    {{ if ne $prevContent "" }}
+        {{ $prevNoteIdentifiers := split $prevContent "\n" }}
+        {{ range $prevNoteIdentifierRaw := $prevNoteIdentifiers }}
+            {{ $prevID := strings.TrimSpace $prevNoteIdentifierRaw }}
+            {{ if ne $prevID "" }}
+                {{ if not (in $visited $prevID) }}
+                    {{ partial "history-recursive.html" (dict "noteIdentifier" $prevID "allNotesData" $allNotesData "contextPage" $contextPage "visited" $visited) }}
+                {{ end }}
+            {{ end }}
+        {{ end }}
+    {{ end }}
+{{ end }}

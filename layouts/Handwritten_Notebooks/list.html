@@ -1,0 +1,287 @@
+{{ define "content" }}
+<section id="main" class="content-container article-pad-v">
+  <a href="/" class="back-button">← Home</a>
+  <h1 id="title">{{.Title}}</h1>
+  <div class="content">
+    {{ .Content }}
+  </div>
+
+  {{ partial "search-panel.html" . }}
+  <div class="notebooks-section">
+    <!-- First, collect all directories -->
+    {{ $allDirs := slice }}
+    {{ range readDir "content/Handwritten_Notebooks" }}
+        {{ if .IsDir }}
+            {{ $allDirs = $allDirs | append .Name }}
+        {{ end }}
+    {{ end }}
+
+    <!-- Sort directories in descending order -->
+    {{ $sortedDirs := sort $allDirs "value" "desc" }}
+
+    <!-- Group by date -->
+    {{ $currentYear := "" }}
+    {{ $currentMonth := "" }}
+    {{ $listOpen := false }}
+
+    {{ range $sortedDirs }}
+        {{ $dirName := . }}
+        {{ $dateMatch := findRE "^(\\d{4})-(\\d{2})" $dirName 1 }}
+
+        {{ if $dateMatch }}
+            {{ $datePart := index $dateMatch 0 }}
+            {{ $dateParts := split $datePart "-" }}
+            {{ $year := index $dateParts 0 }}
+            {{ $month := index $dateParts 1 }}
+
+            <!-- Check if we need a new header -->
+            {{ if or (ne $year $currentYear) (ne $month $currentMonth) }}
+                <!-- Close previous list if open -->
+                {{ if $listOpen }}
+                    </ul>
+                {{ end }}
+
+                <!-- Update current date and open new list -->
+                {{ $currentYear = $year }}
+                {{ $currentMonth = $month }}
+                {{ $listOpen = true }}
+
+                <!-- Month name lookup -->
+                {{ $monthNames := dict "01" "January" "02" "February" "03" "March" "04" "April" "05" "May" "06" "June" "07" "July" "08" "August" "09" "September" "10" "October" "11" "November" "12" "December" }}
+
+                <!-- Display header and start list -->
+                <h2 class="date-header">{{ index $monthNames $month }} {{ $year }}</h2>
+                <ul class="notes-list">
+            {{ end }}
+
+            <!-- Process notebook entry -->
+            {{ $dirPath := printf "content/Handwritten_Notebooks/%s" $dirName }}
+            {{ $descPath := printf "%s/description.txt" $dirPath }}
+            {{ $title := "" }}
+            {{ $description := "Handwritten mathematical research notes" }}
+
+            <!-- Get title and description -->
+            {{ if fileExists $descPath }}
+                {{ $descContent := readFile $descPath }}
+                {{ $descLines := split $descContent "\n" }}
+                {{ if gt (len $descLines) 0 }}
+                    {{ $title = index $descLines 0 }}
+                    {{ if gt (len $descLines) 1 }}
+                        {{ $description = delimit (after 1 $descLines) "\n" }}
+                    {{ end }}
+                {{ else }}
+                    {{ $title = replaceRE "^\\d{4}-\\d{2}-(.+)$" "$1" $dirName }}
+                    {{ $title = replace $title "-" " " }}
+                {{ end }}
+            {{ else }}
+                {{ $title = replaceRE "^\\d{4}-\\d{2}-(.+)$" "$1" $dirName }}
+                {{ $title = replace $title "-" " " }}
+            {{ end }}
+
+            <!-- Check for conf.txt file -->
+            {{ $confPath := printf "%s/conf.txt" $dirPath }}
+            {{ $shouldBlur := false }}
+            {{ if fileExists $confPath }}
+                {{ $shouldBlur = true }}
+            {{ end }}
+
+            <!-- Display notebook entry -->
+            <li class="note-item {{ if $shouldBlur }}blurred-note{{ end }}" id="{{ $dirName | anchorize }}" data-blur="{{ $shouldBlur }}">
+                <div class="note-content">
+                    <details>
+                        <summary class="note-title">
+                            <i>{{ $title }}</i>
+                        </summary>
+                        <p class="note-description">
+                            {{ $description | markdownify }}
+                        </p>
+                    </details>
+                </div>
+                <div class="link-container">
+                    <div class="all-links">
+                        <!-- Find and display PDF files -->
+                        {{ $pdfs := slice }}
+                        {{ with $files := readDir $dirPath }}
+                            {{ range . }}
+                                {{ if findRE "\\.pdf$" .Name }}
+                                    {{ $pdfs = $pdfs | append . }}
+                                {{ end }}
+                            {{ end }}
+                        {{ end }}
+
+                        {{ if gt (len $pdfs) 0 }}
+                            {{ range $pdfs }}
+                                <a href="/{{ $dirPath }}/{{ .Name }}"
+                                   target="_blank"
+                                   class="pdf-link">PDF</a>
+                            {{ end }}
+                        {{ end }}
+                    </div>
+                </div>
+
+                {{/* Previous Notes Logic for Handwritten Notebooks - Start */}}
+                {{ $currentNoteDirPath := $dirPath }}
+                {{ $currentDirName := $dirName }} {{/* Used for history link */}}
+                {{ $prevFilePath := printf "%s/prev.txt" $currentNoteDirPath }}
+                {{ $processedPreviousNotes := slice }}
+                {{ $hasPreviousNotes := false }}
+
+                {{ if fileExists $prevFilePath }}
+                    {{ $prevContent := readFile $prevFilePath | strings.TrimSpace }}
+                    {{ if ne $prevContent "" }}
+                        {{ $hasPreviousNotes = true }}
+                        {{ $prevNoteFolderNames := split $prevContent "\n" }}
+                        {{ range $prevNoteFolderName := $prevNoteFolderNames }}
+                            {{ $cleanedPrevNoteFolderName := strings.TrimSpace . }}
+                            {{ if ne $cleanedPrevNoteFolderName "" }}
+                                {{ $foundPrevNoteData := dict }}
+                                {{/* Search for this folder name in $allDirs (list of notebook dir names in this context) */}}
+                                {{ range $potentialPrevDirName := $allDirs }}
+                                    {{ if eq $potentialPrevDirName $cleanedPrevNoteFolderName }}
+                                        {{ $potentialPrevDirPath := printf "content/Handwritten_Notebooks/%s" $potentialPrevDirName }}
+                                        {{ $prevNoteDateStr := "" }}
+                                        {{ $dateMatchPrev := findRE "^(\\d{4}-\\d{2})" $potentialPrevDirName 1 }}
+                                        {{ if $dateMatchPrev }}{{ $prevNoteDateStr = index $dateMatchPrev 0 }}{{ end }}
+
+                                        {{ $prevNoteTitle := "" }}
+                                        {{ $pDescPath := printf "%s/description.txt" $potentialPrevDirPath }}
+                                        {{ $defaultPrevTitle := replaceRE "^\\d{4}-\\d{2}-(.+)$" "$1" $potentialPrevDirName | replace "-" " " }}
+                                        {{ if fileExists $pDescPath }}
+                                            {{ $pDescContent := readFile $pDescPath | strings.TrimSpace }}
+                                            {{ $pDescLines := split $pDescContent "\n" }}
+                                            {{ $prevNoteTitle = index $pDescLines 0 | strings.TrimSpace | default $defaultPrevTitle }}
+                                        {{ else }}
+                                            {{ $prevNoteTitle = $defaultPrevTitle }}
+                                        {{ end }}
+                                        {{ $foundPrevNoteData = dict "path" $potentialPrevDirPath "title" $prevNoteTitle "date" $prevNoteDateStr "name" $cleanedPrevNoteFolderName }}
+                                    {{ end }}
+                                {{ end }}
+                                {{ if not $foundPrevNoteData }}
+                                    {{ $processedPreviousNotes = $processedPreviousNotes | append (dict "path" "" "title" (printf "Previous notebook '%s' not found" $cleanedPrevNoteFolderName) "date" "" "name" $cleanedPrevNoteFolderName) }}
+                                {{ else }}
+                                    {{ $processedPreviousNotes = $processedPreviousNotes | append $foundPrevNoteData }}
+                                {{ end }}
+                            {{ end }}
+                        {{ end }}
+                    {{ end }}
+                {{ end }}
+
+                {{ if $hasPreviousNotes }}
+                    <div class="previous-notes-section" style="margin-top: 0.7em; padding-top: 0.5em; border-top: 1px dashed #eee;">
+                        <h4 style="margin-bottom: 0.3em; font-size: 0.9em; font-weight: bold; color: #555;">Related Previous Notebooks:</h4>
+                        <ul style="list-style-type: disclosure-closed; margin-left: 1.5em; font-size: 0.9em; padding-left: 1em; margin-bottom: 0.5em;">
+                            {{ range $prevNote := $processedPreviousNotes }}
+                                <li style="margin-bottom: 0.2em;">
+                                    {{ if $prevNote.path }}
+                                        {{ $prevNotebookPageLink := printf "/Handwritten_Notebooks#%s" ($prevNote.name | anchorize) }}
+                                        <a href="{{ $prevNotebookPageLink | relURL }}">{{ $prevNote.title }}</a>
+                                        {{ if $prevNote.date }}({{ $prevNote.date }}){{ end }}
+                                    {{ else }}
+                                        <span style="color: #888;">{{ $prevNote.title }}</span>
+                                    {{ end }}
+                                </li>
+                            {{ end }}
+                        </ul>
+                        {{ $historyLink := printf "/history?note=%s&type=handwritten" $currentDirName }}
+                        <a href="{{ $historyLink | relURL }}" class="history-link" style="font-size: 0.9em; margin-top: 0.3em; display: inline-block; color: #007bff;">View Full History &raquo;</a>
+                    </div>
+                {{ end }}
+                {{/* Previous Notes Logic for Handwritten Notebooks - End */}}
+            </li>
+        {{ end }}
+    {{ end }}
+
+    <!-- Close the last list if open -->
+    {{ if $listOpen }}
+        </ul>
+    {{ end }}
+  </div>
+
+  <!-- Script for persisting open/closed state -->
+  <script>
+  document.addEventListener('DOMContentLoaded', function() {
+      const details = document.querySelectorAll('details');
+      details.forEach(detail => {
+          detail.addEventListener('toggle', function() {
+              localStorage.setItem('detail-' + this.querySelector('summary').textContent.trim(), this.open);
+          });
+
+          const stored = localStorage.getItem('detail-' + detail.querySelector('summary').textContent.trim());
+          if (stored === 'true') {
+              detail.open = true;
+          }
+      });
+
+      // Add keyboard shortcut for toggling blur
+      document.addEventListener("keydown", function(event) {
+          // Toggle blur on Command+B (Mac) or Ctrl+B (Windows/Linux)
+          if ((event.key === 'b' || event.key === 'B') && (event.metaKey || event.ctrlKey)) {
+              event.preventDefault(); // Prevent default browser behavior
+              const blurredNotes = document.querySelectorAll('.blurred-note');
+              blurredNotes.forEach(note => {
+                  note.classList.toggle('unblurred');
+              });
+          }
+      });
+  });
+  </script>
+</section>
+
+<style>
+.back-button {
+    display: inline-block;
+    margin-bottom: 1.5rem;
+    padding: 4px 12px;
+    border: 1px solid #bbb;
+    border-radius: 4px;
+    text-decoration: none;
+    color: #222;
+    background: #f8f8f8;
+    font-size: 1rem;
+    transition: background 0.15s;
+}
+.back-button:hover {
+    background: #e5e5e5;
+}
+.notebooks-section {
+    margin-top: 2rem;
+}
+.notes-list {
+    list-style: none;
+    padding: 0;
+}
+.note-item {
+    margin-bottom: 1rem;
+    border-bottom: 1px solid #eee;
+    padding-bottom: 1rem;
+}
+.note-title {
+    cursor: pointer;
+    font-size: 1.1rem;
+}
+.note-description {
+    margin-top: 0.5rem;
+    margin-left: 1rem;
+}
+.date-header {
+    margin-top: 2rem;
+    border-bottom: 2px solid #ddd;
+    padding-bottom: 0.5rem;
+}
+.pdf-link {
+    display: inline-block;
+    padding: 2px 8px;
+    /* background-color: #007bff; */
+    /* color: white; */
+    text-decoration: none;
+    border-radius: 3px;
+    margin-right: 4px;
+    margin-top: 8px;
+    font-size: 0.9em;
+}
+.link-separator {
+    color: #999;
+    margin: 0 4px;
+}
+</style>
+{{ end }}

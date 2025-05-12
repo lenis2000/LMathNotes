@@ -1,0 +1,282 @@
+<div
+    class="search-panel"
+    style="
+        width: 100% !important;
+        max-width: 100% !important;
+        box-sizing: border-box !important;
+        padding: 0 !important;
+        margin: 1.5rem 0 !important;
+    "
+>
+    <input
+        type="text"
+        id="searchInput"
+        class="search-input"
+        style="
+            width: 100% !important;
+            box-sizing: border-box !important;
+            display: block !important;
+        "
+        placeholder="Search notes by title, description, filenames, or TEX content..."
+        autocomplete="off"
+    />
+</div>
+
+<style>
+    /* Additional styles to ensure search panel is 100% wide */
+    .search-panel,
+    .content-container .search-panel,
+    .sidepull-main .search-panel,
+    * .search-panel {
+        width: 100% !important;
+        max-width: 100% !important;
+        box-sizing: border-box !important;
+        padding: 0 !important;
+        margin: 1.5rem 0 !important;
+        left: 0 !important;
+        right: 0 !important;
+    }
+
+    .search-input,
+    .content-container .search-input,
+    .sidepull-main .search-input,
+    * .search-input {
+        width: 100% !important;
+        max-width: 100% !important;
+        box-sizing: border-box !important;
+        display: block !important;
+    }
+</style>
+
+<script>
+    document.addEventListener("DOMContentLoaded", function () {
+        const searchInput = document.getElementById("searchInput");
+        const searchPanel = document.querySelector(".search-panel");
+
+        // Force width through JavaScript
+        if (searchPanel) {
+            searchPanel.style.width = "100%";
+            searchPanel.style.maxWidth = "100%";
+            searchPanel.style.boxSizing = "border-box";
+            searchPanel.style.padding = "0";
+            searchPanel.style.margin = "1.5rem 0";
+            searchPanel.style.left = "0";
+            searchPanel.style.right = "0";
+        }
+
+        if (searchInput) {
+            searchInput.style.width = "100%";
+            searchInput.style.maxWidth = "100%";
+            searchInput.style.boxSizing = "border-box";
+            searchInput.style.display = "block";
+        }
+
+        // Search instantly as user types
+        searchInput.addEventListener("input", function () {
+            performSearch(this.value);
+        });
+
+        // Enhanced Escape key behavior - clear search AND focus the input
+        document.addEventListener("keydown", function (event) {
+            if (event.key === "Escape") {
+                // If the search input is not focused and has content, focus it first
+                if (
+                    document.activeElement !== searchInput &&
+                    searchInput.value.trim() !== ""
+                ) {
+                    searchInput.focus();
+                    event.preventDefault(); // Prevent default Esc behavior
+                }
+                // If already focused or empty, clear the search
+                else {
+                    searchInput.value = "";
+                    performSearch("");
+                    searchInput.focus(); // Keep focus on the search input
+                    event.preventDefault(); // Prevent default Esc behavior
+                }
+            }
+        });
+
+        function createCaseSmartPattern(searchTerm) {
+            // Escape special regex characters
+            const escaped = searchTerm.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+
+            // Build a regex pattern where uppercase letters match only uppercase,
+            // but lowercase letters match both cases
+            let pattern = '';
+            for (let i = 0; i < escaped.length; i++) {
+                const char = escaped[i];
+                // If it's uppercase, match only uppercase
+                if (char === char.toUpperCase() && char !== char.toLowerCase()) {
+                    pattern += char;
+                }
+                // If it's lowercase, match both cases
+                else if (char === char.toLowerCase() && char !== char.toUpperCase()) {
+                    pattern += '[' + char + char.toUpperCase() + ']';
+                }
+                // If it's not a letter (number, symbol, etc.), match it exactly
+                else {
+                    pattern += char;
+                }
+            }
+
+            return new RegExp(pattern, 'g');
+        }
+
+        async function performSearch(searchTerm) {
+            const trimmedTerm = searchTerm.trim();
+            const dateHeaders = document.querySelectorAll(".date-header");
+            let hasResults = false;
+
+            for (const header of dateHeaders) {
+                const notesList = header.nextElementSibling;
+                if (!notesList || !notesList.classList.contains("notes-list"))
+                    continue;
+
+                const notes = notesList.querySelectorAll(".note-item");
+                let visibleCount = 0;
+
+                for (const note of notes) {
+                    const visible = await isNoteMatchingSearch(
+                        note,
+                        trimmedTerm,
+                    );
+                    note.style.display = visible ? "" : "none";
+                    if (visible) {
+                        visibleCount++;
+                        hasResults = true;
+                    }
+                }
+
+                // Hide empty sections
+                if (visibleCount === 0) {
+                    header.style.display = "none";
+                    notesList.style.display = "none";
+                } else {
+                    header.style.display = "";
+                    notesList.style.display = "";
+                }
+            }
+
+            // Show/hide no results message
+            updateNoResultsMessage(!hasResults && searchTerm);
+        }
+
+        async function isNoteMatchingSearch(note, searchTerm) {
+            if (!searchTerm) return true;
+
+            // Create case-smart regex pattern
+            const pattern = createCaseSmartPattern(searchTerm);
+
+            // Check title and description already loaded in the DOM
+            const title = note.querySelector(".note-title")?.textContent || "";
+            const description = note.querySelector(".note-description")?.textContent || "";
+
+            if (pattern.test(title) || pattern.test(description)) {
+                return true;
+            }
+
+            // Find the directory path from either TEX or PDF link
+            let dirPath = "";
+
+            // Try to get directory path from TEX link
+            const texLinks = note.querySelectorAll(
+                'a[href*="tex-viewer?path="]',
+            );
+            if (texLinks.length > 0) {
+                const href = texLinks[0].getAttribute("href");
+                const path = href.split("path=")[1];
+                if (path) {
+                    dirPath = decodeURIComponent(path)
+                        .split("/")
+                        .slice(0, -1)
+                        .join("/");
+                }
+            }
+
+            // If no TEX link, try PDF link
+            if (!dirPath) {
+                const pdfLinks = note.querySelectorAll('a[href*=".pdf"]');
+                if (pdfLinks.length > 0) {
+                    const href = pdfLinks[0].getAttribute("href");
+                    dirPath = href.split("/").slice(0, -1).join("/");
+                    // Remove leading slash if present
+                    if (dirPath.startsWith("/")) {
+                        dirPath = dirPath.substring(1);
+                    }
+                }
+            }
+
+            // Check all file links for filename matches
+            const allFileLinks = note.querySelectorAll('a.file-link, a.pdf-link, a.tex-link');
+            for (const link of allFileLinks) {
+                const href = link.getAttribute("href");
+                const filename = href.split("/").pop();
+                if (filename && pattern.test(filename)) {
+                    return true;
+                }
+
+                // Also check the displayed text (which is often the filename)
+                if (link.textContent && pattern.test(link.textContent)) {
+                    return true;
+                }
+            }
+
+            // Check description.txt if we found a directory path
+            if (dirPath) {
+                try {
+                    const descPath = `${dirPath}/description.txt`;
+                    const descResponse = await fetch(descPath);
+                    const descContent = await descResponse.text();
+                    if (pattern.test(descContent)) {
+                        return true;
+                    }
+                } catch (e) {
+                    console.warn(
+                        "Failed to search description.txt file:",
+                        dirPath,
+                    );
+                }
+            }
+
+            // Check TEX files
+            for (const link of texLinks) {
+                const href = link.getAttribute("href");
+                const path = href.split("path=")[1];
+                if (path) {
+                    try {
+                        const response = await fetch(decodeURIComponent(path));
+                        const content = await response.text();
+                        if (pattern.test(content)) {
+                            return true;
+                        }
+                    } catch (e) {
+                        console.warn("Failed to search TEX file:", path);
+                    }
+                }
+            }
+
+            return false;
+        }
+
+        function updateNoResultsMessage(show) {
+            let msg = document.getElementById("noResultsMessage");
+            const container = document.querySelector(
+                ".notes-section, .notebooks-section",
+            );
+
+            if (show && container) {
+                if (!msg) {
+                    msg = document.createElement("div");
+                    msg.id = "noResultsMessage";
+                    msg.className = "no-results-message";
+                    msg.textContent = "No notes found matching your search.";
+                    container.appendChild(msg);
+                }
+                msg.style.display = "block";
+            } else if (msg) {
+                msg.style.display = "none";
+            }
+        }
+    });
+</script>
